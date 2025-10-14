@@ -85,7 +85,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
           padding: const EdgeInsets.all(16.0),
           children: [
             DropdownButtonFormField<String>(
-              value: _selectedCategory,
+              initialValue: _selectedCategory,
               hint: const Text('Selecciona una categoría'),
               items: _categories.toSet().toList().map((String category) {
                 return DropdownMenuItem<String>(

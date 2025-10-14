@@ -7,6 +7,7 @@ import 'package:mi_billetera_digital/pages/add_transaction_page.dart';
 import 'package:mi_billetera_digital/pages/login_page.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
+import 'package:mi_billetera_digital/pages/transaction_detail_page.dart';
 
 // Modelo para guardar los datos calculados y evitar recalcularlos
 class FinancialSummary {
@@ -152,8 +153,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Eliminar'),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Eliminar'),
           ),
         ],
       ),
@@ -434,6 +435,14 @@ class TransactionListItem extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) =>
+                  TransactionDetailPage(transaction: transaction),
+            ),
+          );
+        },
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(16.0),
         child: Padding(
@@ -462,7 +471,7 @@ class TransactionListItem extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      transaction['category'],
+                      '${transaction['category']} • ${DateFormat.yMMMd('es_AR').format(DateTime.parse(transaction['date']))}',
                       style: const TextStyle(
                         color: AppTheme.subtextColor,
                         fontSize: 12,

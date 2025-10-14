@@ -74,7 +74,7 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
                           },
                         ),
                       )
-                      .toList(),
+                      ,
               ],
             ),
           );

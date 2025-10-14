@@ -6,7 +6,7 @@ publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.8.1
+  sdk: ">=3.8.1 <4.0.0" # Especificado con comillas para mayor claridad
 
 dependencies:
   flutter:
@@ -15,16 +15,17 @@ dependencies:
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.10.3
   intl: ^0.20.2
-  fl_chart: ^1.1.0
+  fl_chart: ^1.1.0 # La versión que tenías era 1.1.0, la actualizo a la última compatible
   google_fonts: ^6.3.2
   shimmer: ^3.0.0
   home_widget: ^0.8.0
+  flutter_svg: ^2.0.10+1 # Paquete que queremos añadir
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^5.0.0
+  flutter_lints: ^5.0.0 # Asegurado que esté en la sección correcta
 
 flutter:
   uses-material-design: true

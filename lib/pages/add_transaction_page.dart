@@ -2,10 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
+import 'package:mi_billetera_digital/widgets/account_logo_widget.dart';
 
 class AddTransactionPage extends StatefulWidget {
   final Map<String, dynamic>? transaction;
-
   const AddTransactionPage({super.key, this.transaction});
 
   @override
@@ -16,15 +16,24 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
-  final _otherPaymentMethodController = TextEditingController();
+
   String _selectedType = 'expense';
   String _selectedCategory = 'Otros';
-  String _selectedPaymentMethod = 'Efectivo';
+  String?
+  _selectedPaymentValue; // Valor unificado (ej: "account_id" o "Efectivo")
+
   bool _isLoading = false;
   bool get _isEditing => widget.transaction != null;
-
   String? _budgetWarning;
   Timer? _debounce;
+  List<Map<String, dynamic>> _userAccounts = [];
+
+  // Lista de métodos de pago genéricos
+  final List<String> _genericPaymentMethods = [
+    'Efectivo',
+    'Transferencia',
+    'Otro',
+  ];
 
   final List<String> _categories = [
     'Comida',
@@ -42,16 +51,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     'Inversiones',
   ];
 
-  final List<String> _paymentMethods = [
-    'Efectivo',
-    'Mercado Pago',
-    'Banco',
-    'Otro',
-  ];
-
   @override
   void initState() {
     super.initState();
+    _loadInitialData();
+
     if (_isEditing) {
       final transaction = widget.transaction!;
       _descriptionController.text = transaction['description'];
@@ -59,15 +63,22 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       _selectedType = transaction['type'];
       _selectedCategory = transaction['category'];
 
-      final existingMethod = transaction['payment_method'] as String?;
-      if (existingMethod != null && _paymentMethods.contains(existingMethod)) {
-        _selectedPaymentMethod = existingMethod;
-      } else if (existingMethod != null) {
-        _selectedPaymentMethod = 'Otro';
-        _otherPaymentMethodController.text = existingMethod;
+      if (transaction['account_id'] != null) {
+        _selectedPaymentValue = transaction['account_id'];
+      } else {
+        _selectedPaymentValue = transaction['payment_method'];
       }
     }
     _amountController.addListener(_onFormChanged);
+  }
+
+  Future<void> _loadInitialData() async {
+    final accountsData = await supabase.from('accounts').select('id, name');
+    if (mounted) {
+      setState(() {
+        _userAccounts = (accountsData as List).cast<Map<String, dynamic>>();
+      });
+    }
   }
 
   @override
@@ -75,7 +86,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     _descriptionController.dispose();
     _amountController.removeListener(_onFormChanged);
     _amountController.dispose();
-    _otherPaymentMethodController.dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -115,7 +125,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       }
 
       final budgetAmount = (budgetResponse['amount'] as num).toDouble();
-
       final firstDayOfMonth = DateTime(now.year, now.month, 1);
       final expensesResponse = await supabase
           .from('transactions')
@@ -124,13 +133,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           .eq('category', _selectedCategory)
           .gte('date', firstDayOfMonth.toIso8601String());
 
-      double currentSpent = 0;
-      if (expensesResponse.isNotEmpty) {
-        currentSpent = (expensesResponse as List).fold<double>(
-          0,
-          (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0),
-        );
-      }
+      double currentSpent = (expensesResponse as List).fold<double>(
+        0,
+        (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0),
+      );
 
       if (currentSpent + amount > budgetAmount) {
         if (mounted) {
@@ -149,23 +155,32 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   Future<void> _submitTransaction() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-      try {
-        final amount = double.parse(_amountController.text);
-        final description = _descriptionController.text;
-        final finalPaymentMethod = _selectedPaymentMethod == 'Otro'
-            ? _otherPaymentMethodController.text.trim()
-            : _selectedPaymentMethod;
+      setState(() => _isLoading = true);
 
+      String? accountId;
+      String paymentMethod;
+
+      if (_userAccounts.any((acc) => acc['id'] == _selectedPaymentValue)) {
+        final account = _userAccounts.firstWhere(
+          (acc) => acc['id'] == _selectedPaymentValue,
+        );
+        accountId = account['id'];
+        paymentMethod = account['name'];
+      } else {
+        accountId = null;
+        paymentMethod = _selectedPaymentValue!;
+      }
+
+      try {
         final data = {
-          'description': description,
-          'amount': amount,
+          'description': _descriptionController.text.trim(),
+          'amount': double.parse(_amountController.text),
           'type': _selectedType,
           'category': _selectedCategory,
           'date': DateTime.now().toIso8601String(),
-          'payment_method': finalPaymentMethod,
+          'payment_method': paymentMethod,
+          'account_id': accountId,
+          'user_id': supabase.auth.currentUser!.id,
         };
 
         if (_isEditing) {
@@ -186,23 +201,57 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Error al guardar la transacción'),
+              content: Text('Error al guardar: $error'),
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
       } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final List<DropdownMenuItem<String>> paymentItems = [];
+
+    paymentItems.addAll(
+      _userAccounts.map((account) {
+        return DropdownMenuItem<String>(
+          value: account['id'],
+          child: Row(
+            children: [
+              AccountLogoWidget(accountName: account['name'], size: 24),
+              const SizedBox(width: 12),
+              Text(account['name']),
+            ],
+          ),
+        );
+      }),
+    );
+
+    if (_userAccounts.isNotEmpty) {
+      paymentItems.add(
+        const DropdownMenuItem<String>(enabled: false, child: Divider()),
+      );
+    }
+
+    paymentItems.addAll(
+      _genericPaymentMethods.map((method) {
+        return DropdownMenuItem<String>(
+          value: method,
+          child: Row(
+            children: [
+              AccountLogoWidget(accountName: method, size: 24),
+              const SizedBox(width: 12),
+              Text(method),
+            ],
+          ),
+        );
+      }),
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar Transacción' : 'Nueva Transacción'),
@@ -214,7 +263,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           children: [
             TextFormField(
               controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Descripción'),
+              decoration: const InputDecoration(labelText: 'Descripción*'),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Por favor, ingresa una descripción';
@@ -226,7 +275,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             TextFormField(
               controller: _amountController,
               decoration: const InputDecoration(
-                labelText: 'Monto',
+                labelText: 'Monto*',
                 prefixText: '\$ ',
               ),
               keyboardType: const TextInputType.numberWithOptions(
@@ -241,36 +290,20 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 return null;
               },
             ),
-            if (_budgetWarning != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: Colors.orange.shade800,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _budgetWarning!,
-                          style: TextStyle(
-                            color: Colors.orange.shade900,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            const SizedBox(height: 24),
+            DropdownButtonFormField<String>(
+              value: _selectedPaymentValue,
+              hint: const Text('Método de Pago / Cuenta*'),
+              items: paymentItems,
+              onChanged: (newValue) {
+                setState(() => _selectedPaymentValue = newValue);
+              },
+              decoration: const InputDecoration(
+                labelText: 'Método de Pago / Cuenta',
               ),
+              validator: (value) =>
+                  value == null ? 'Selecciona una opción' : null,
+            ),
             const SizedBox(height: 24),
             DropdownButtonFormField<String>(
               value: _selectedType,
@@ -305,39 +338,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               },
               decoration: const InputDecoration(labelText: 'Categoría'),
             ),
-            const SizedBox(height: 24),
-            DropdownButtonFormField<String>(
-              value: _selectedPaymentMethod,
-              items: _paymentMethods.map((String method) {
-                return DropdownMenuItem<String>(
-                  value: method,
-                  child: Text(method),
-                );
-              }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _selectedPaymentMethod = newValue!;
-                });
-              },
-              decoration: const InputDecoration(labelText: 'Método de Pago'),
-            ),
-            if (_selectedPaymentMethod == 'Otro')
-              Padding(
-                padding: const EdgeInsets.only(top: 24.0),
-                child: TextFormField(
-                  controller: _otherPaymentMethodController,
-                  decoration: const InputDecoration(
-                    labelText: 'Especificar otro método',
-                  ),
-                  validator: (value) {
-                    if (_selectedPaymentMethod == 'Otro' &&
-                        (value == null || value.isEmpty)) {
-                      return 'Por favor, especifica el método';
-                    }
-                    return null;
-                  },
-                ),
-              ),
             const SizedBox(height: 32),
             _isLoading
                 ? const Center(child: CircularProgressIndicator())

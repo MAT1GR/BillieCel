@@ -86,7 +86,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
                       spentAmount: spentAmount,
                       currencyFormat: currencyFormat,
                     );
-                  }).toList(),
+                  }),
               ],
             ),
           );

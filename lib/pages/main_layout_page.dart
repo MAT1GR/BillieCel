@@ -3,7 +3,7 @@ import 'package:mi_billetera_digital/pages/transactions_page.dart';
 import 'package:mi_billetera_digital/pages/budgets_page.dart';
 import 'package:mi_billetera_digital/pages/savings_goals_page.dart';
 import 'package:mi_billetera_digital/pages/tasks_page.dart';
-import 'package:mi_billetera_digital/app_theme.dart';
+import 'package:mi_billetera_digital/pages/accounts_page.dart'; // <-- Importación añadida
 
 class MainLayoutPage extends StatefulWidget {
   const MainLayoutPage({super.key});
@@ -20,6 +20,7 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
     TransactionsPage(),
     BudgetsPage(),
     SavingsGoalsPage(),
+    AccountsPage(), // <-- Página de Cuentas añadida
     TasksPage(),
   ];
 
@@ -34,8 +35,7 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
     return Scaffold(
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType
-            .fixed, // Esto asegura que todos los íconos sean visibles y no se muevan
+        type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet_outlined),
@@ -51,6 +51,12 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
             icon: Icon(Icons.star_border_outlined),
             activeIcon: Icon(Icons.star),
             label: 'Metas',
+          ),
+          BottomNavigationBarItem(
+            // <-- Nuevo ítem para Cuentas
+            icon: Icon(Icons.credit_card_outlined),
+            activeIcon: Icon(Icons.credit_card),
+            label: 'Cuentas',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.checklist_outlined),

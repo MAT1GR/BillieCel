@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/pages/transactions_page.dart';
+import 'package:mi_billetera_digital/pages/budgets_page.dart';
+import 'package:mi_billetera_digital/pages/savings_goals_page.dart';
 import 'package:mi_billetera_digital/pages/tasks_page.dart';
-import 'package:mi_billetera_digital/pages/budgets_page.dart'; // <-- Nueva página
+import 'package:mi_billetera_digital/app_theme.dart';
 
 class MainLayoutPage extends StatefulWidget {
   const MainLayoutPage({super.key});
@@ -13,9 +15,11 @@ class MainLayoutPage extends StatefulWidget {
 class _MainLayoutPageState extends State<MainLayoutPage> {
   int _selectedIndex = 0;
 
+  // Lista de todas las páginas principales de la app
   static const List<Widget> _widgetOptions = <Widget>[
     TransactionsPage(),
-    BudgetsPage(), // <-- Nueva página en el medio
+    BudgetsPage(),
+    SavingsGoalsPage(),
     TasksPage(),
   ];
 
@@ -30,16 +34,29 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
     return Scaffold(
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType
+            .fixed, // Esto asegura que todos los íconos sean visibles y no se muevan
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet),
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            activeIcon: Icon(Icons.account_balance_wallet),
             label: 'Transacciones',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.pie_chart_outline), // <-- Nuevo ícono
+            icon: Icon(Icons.pie_chart_outline),
+            activeIcon: Icon(Icons.pie_chart),
             label: 'Presupuestos',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.checklist), label: 'Tareas'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.star_border_outlined),
+            activeIcon: Icon(Icons.star),
+            label: 'Metas',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.checklist_outlined),
+            activeIcon: Icon(Icons.checklist),
+            label: 'Tareas',
+          ),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

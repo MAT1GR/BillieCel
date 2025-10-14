@@ -23,16 +23,15 @@ class _TasksPageState extends State<TasksPage> {
     _tasksStream = supabase
         .from('tasks')
         .stream(primaryKey: ['id'])
-        .order('is_completed')
-        .order('created_at', ascending: false);
+        .order('completed')
+        .order('created_at', ascending: false); // Corregido: 'completed'
   }
 
   Future<void> _toggleTaskStatus(String taskId, bool currentStatus) async {
     try {
-      await supabase
-          .from('tasks')
-          .update({'is_completed': !currentStatus})
-          .match({'id': taskId});
+      await supabase.from('tasks').update({'completed': !currentStatus}).match({
+        'id': taskId,
+      }); // Corregido: 'completed'
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -44,7 +43,6 @@ class _TasksPageState extends State<TasksPage> {
     }
   }
 
-  // --- FUNCIÓN PARA MOSTRAR EL MENÚ DE OPCIONES ---
   Future<void> _showOptions(
     BuildContext context,
     Map<String, dynamic> task,
@@ -87,7 +85,6 @@ class _TasksPageState extends State<TasksPage> {
     );
   }
 
-  // --- FUNCIÓN PARA ELIMINAR LA TAREA ---
   Future<void> _deleteTask(
     BuildContext context,
     Map<String, dynamic> task,
@@ -116,6 +113,11 @@ class _TasksPageState extends State<TasksPage> {
     if (confirm == true) {
       try {
         await supabase.from('tasks').delete().match({'id': task['id']});
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Tarea eliminada')));
+        }
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -187,9 +189,11 @@ class _TasksPageState extends State<TasksPage> {
                   return TaskListItem(
                     task: task,
                     onStatusChanged: (value) {
-                      _toggleTaskStatus(task['id'], task['is_completed']);
+                      _toggleTaskStatus(
+                        task['id'],
+                        task['completed'],
+                      ); // Corregido
                     },
-                    // --- AQUÍ SE ACTIVA EL MENÚ ---
                     onLongPress: () {
                       _showOptions(context, task);
                     },
@@ -226,7 +230,7 @@ class TaskListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompleted = task['is_completed'] as bool;
+    final isCompleted = task['completed'] as bool; // Corregido
     final dueDateString = task['due_date'] as String?;
     final description = task['description'] as String?;
 

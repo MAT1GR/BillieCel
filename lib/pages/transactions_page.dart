@@ -6,10 +6,9 @@ import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/pages/add_transaction_page.dart';
 import 'package:mi_billetera_digital/pages/login_page.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
-import 'package:mi_billetera_digital/widgets/loading_shimmer.dart'; // La importación de shimmer SÍ es correcta
+import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 
-// El resto del archivo es idéntico al anterior, solo se quitó la línea incorrecta.
-
+// Modelo para guardar los datos calculados y evitar recalcularlos
 class FinancialSummary {
   final double totalIngresos;
   final double totalEgresos;
@@ -46,7 +45,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     _transactionsStream = supabase
         .from('transactions')
         .stream(primaryKey: ['id'])
-        .order('created_at', ascending: false);
+        .order('date', ascending: false); // Corregido a 'date'
 
     _streamSubscription = _transactionsStream.listen((transactions) {
       _transactionsNotifier.value = transactions;
@@ -64,17 +63,23 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   void _calculateSummary(List<Map<String, dynamic>> transactions) {
     final totalIngresos = transactions
-        .where((t) => t['type'] == 'ingreso')
-        .fold<double>(0, (sum, t) => sum + (t['amount'] ?? 0));
+        .where((t) => t['type'] == 'income')
+        .fold<double>(
+          0,
+          (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0),
+        );
     final totalEgresos = transactions
-        .where((t) => t['type'] == 'egreso')
-        .fold<double>(0, (sum, t) => sum + (t['amount'] ?? 0));
+        .where((t) => t['type'] == 'expense')
+        .fold<double>(
+          0,
+          (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0),
+        );
     final saldo = totalIngresos - totalEgresos;
 
     final Map<String, double> expenseByCategory = {};
-    transactions.where((t) => t['type'] == 'egreso').forEach((t) {
+    transactions.where((t) => t['type'] == 'expense').forEach((t) {
       final category = t['category'] as String;
-      final amount = t['amount'] as double;
+      final amount = (t['amount'] as num).toDouble();
       expenseByCategory[category] = (expenseByCategory[category] ?? 0) + amount;
     });
 
@@ -222,6 +227,14 @@ class _TransactionsPageState extends State<TransactionsPage> {
             child: ValueListenableBuilder<List<Map<String, dynamic>>>(
               valueListenable: _transactionsNotifier,
               builder: (context, transactions, _) {
+                if (transactions.isEmpty &&
+                    _summaryNotifier.value.totalIngresos == 0 &&
+                    _summaryNotifier.value.totalEgresos == 0) {
+                  // Muestra shimmer solo si no hay transacciones y los totales son cero (carga inicial)
+                  if (_streamSubscription != null) {
+                    return const LoadingShimmer();
+                  }
+                }
                 if (transactions.isEmpty) {
                   return const Center(
                     child: Padding(
@@ -414,7 +427,7 @@ class TransactionListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIncome = transaction['type'] == 'ingreso';
+    final isIncome = transaction['type'] == 'income'; // Corregido a 'income'
     final color = isIncome ? AppTheme.accentColor : Colors.redAccent;
     final icon = isIncome ? Icons.arrow_upward : Icons.arrow_downward;
 
@@ -459,7 +472,9 @@ class TransactionListItem extends StatelessWidget {
                 ),
               ),
               Text(
-                currencyFormat.format(transaction['amount']),
+                currencyFormat.format(
+                  (transaction['amount'] as num).toDouble(),
+                ),
                 style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.bold,

@@ -1,9 +1,8 @@
-// lib/pages/add_transaction_page.dart
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
+import 'package:mi_billetera_digital/app_theme.dart';
 
 class AddTransactionPage extends StatefulWidget {
-  // 1. Aceptará una transacción opcional para editar
   final Map<String, dynamic>? transaction;
 
   const AddTransactionPage({super.key, this.transaction});
@@ -16,11 +15,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
-  String _selectedType = 'egreso';
+  String _selectedType = 'expense'; // Corregido: 'expense' en lugar de 'egreso'
   String _selectedCategory = 'Otros';
   bool _isLoading = false;
-  bool get _isEditing =>
-      widget.transaction != null; // Saber si estamos en modo edición
+  bool get _isEditing => widget.transaction != null;
 
   final List<String> _categories = [
     'Comida',
@@ -31,12 +29,16 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     'Salud',
     'Sueldo',
     'Otros',
+    'Alimentación',
+    'Entretenimiento',
+    'Educación',
+    'Servicios',
+    'Inversiones',
   ];
 
   @override
   void initState() {
     super.initState();
-    // 2. Si estamos editando, llenamos el formulario con los datos existentes
     if (_isEditing) {
       final transaction = widget.transaction!;
       _descriptionController.text = transaction['description'];
@@ -44,6 +46,13 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       _selectedType = transaction['type'];
       _selectedCategory = transaction['category'];
     }
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _amountController.dispose();
+    super.dispose();
   }
 
   Future<void> _submitTransaction() async {
@@ -54,19 +63,17 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       try {
         final amount = double.parse(_amountController.text);
         final description = _descriptionController.text;
-        final userId = supabase.auth.currentUser!.id;
 
         final data = {
           'description': description,
           'amount': amount,
           'type': _selectedType,
           'category': _selectedCategory,
-          'transaction_date': DateTime.now().toIso8601String(),
-          'user_id': userId,
+          'date': DateTime.now()
+              .toIso8601String(), // Corregido: 'date' en lugar de 'transaction_date'
         };
 
         if (_isEditing) {
-          // 3. Si editamos, hacemos un "update" en lugar de "insert"
           await supabase.from('transactions').update(data).match({
             'id': widget.transaction!['id'],
           });
@@ -76,7 +83,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Transacción guardada con éxito')),
+            const SnackBar(content: Text('Transacción guardada con éxito')),
           );
           Navigator.of(context).pop();
         }
@@ -103,7 +110,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // 4. El título cambia si estamos editando
         title: Text(_isEditing ? 'Editar Transacción' : 'Nueva Transacción'),
       ),
       body: Form(
@@ -121,14 +127,16 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             TextFormField(
               controller: _amountController,
               decoration: const InputDecoration(
                 labelText: 'Monto',
                 prefixText: '\$ ',
               ),
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               validator: (value) {
                 if (value == null ||
                     value.isEmpty ||
@@ -138,13 +146,14 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             DropdownButtonFormField<String>(
-              initialValue: _selectedType,
-              items: ['egreso', 'ingreso'].map((String value) {
+              value: _selectedType,
+              items: ['expense', 'income'].map((String value) {
+                // Corregido: 'expense' e 'income'
                 return DropdownMenuItem<String>(
                   value: value,
-                  child: Text(value == 'egreso' ? 'Egreso' : 'Ingreso'),
+                  child: Text(value == 'expense' ? 'Egreso' : 'Ingreso'),
                 );
               }).toList(),
               onChanged: (newValue) {
@@ -154,10 +163,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               },
               decoration: const InputDecoration(labelText: 'Tipo'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             DropdownButtonFormField<String>(
-              initialValue: _selectedCategory,
-              items: _categories.map((String category) {
+              value: _selectedCategory,
+              items: _categories.toSet().toList().map((String category) {
+                // .toSet().toList() para eliminar duplicados
                 return DropdownMenuItem<String>(
                   value: category,
                   child: Text(category),
@@ -170,12 +180,14 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               },
               decoration: const InputDecoration(labelText: 'Categoría'),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : ElevatedButton(
                     onPressed: _submitTransaction,
-                    child: const Text('Guardar Transacción'),
+                    child: Text(
+                      _isEditing ? 'Guardar Cambios' : 'Guardar Transacción',
+                    ),
                   ),
           ],
         ),

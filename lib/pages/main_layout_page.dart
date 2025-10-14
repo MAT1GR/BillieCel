@@ -1,8 +1,7 @@
-// lib/pages/main_layout_page.dart
-
-import 'package:flutter/material.dart'; // <-- Esta es la línea clave para toda la UI de Material Design.
-import 'package:mi_billetera_digital/pages/transactions_page.dart'; // Actualizamos al nuevo nombre
+import 'package:flutter/material.dart';
+import 'package:mi_billetera_digital/pages/transactions_page.dart';
 import 'package:mi_billetera_digital/pages/tasks_page.dart';
+import 'package:mi_billetera_digital/pages/budgets_page.dart'; // <-- Nueva página
 
 class MainLayoutPage extends StatefulWidget {
   const MainLayoutPage({super.key});
@@ -14,9 +13,9 @@ class MainLayoutPage extends StatefulWidget {
 class _MainLayoutPageState extends State<MainLayoutPage> {
   int _selectedIndex = 0;
 
-  // Ahora la lista de páginas es más clara.
   static const List<Widget> _widgetOptions = <Widget>[
-    TransactionsPage(), // Usamos el nuevo nombre
+    TransactionsPage(),
+    BudgetsPage(), // <-- Nueva página en el medio
     TasksPage(),
   ];
 
@@ -36,11 +35,14 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
             icon: Icon(Icons.account_balance_wallet),
             label: 'Transacciones',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.pie_chart_outline), // <-- Nuevo ícono
+            label: 'Presupuestos',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.checklist), label: 'Tareas'),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: Colors.blue[800], // Pequeña mejora visual
       ),
     );
   }

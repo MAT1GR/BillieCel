@@ -9,7 +9,6 @@ import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/pages/transaction_detail_page.dart';
 
-// Modelo para guardar los datos calculados y evitar recalcularlos
 class FinancialSummary {
   final double totalIngresos;
   final double totalEgresos;
@@ -34,10 +33,8 @@ class TransactionsPage extends StatefulWidget {
 class _TransactionsPageState extends State<TransactionsPage> {
   late final Stream<List<Map<String, dynamic>>> _transactionsStream;
   StreamSubscription? _streamSubscription;
-
   final _summaryNotifier = ValueNotifier<FinancialSummary>(FinancialSummary());
   final _transactionsNotifier = ValueNotifier<List<Map<String, dynamic>>>([]);
-
   final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$ ');
 
   @override
@@ -46,8 +43,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     _transactionsStream = supabase
         .from('transactions')
         .stream(primaryKey: ['id'])
-        .order('date', ascending: false); // Corregido a 'date'
-
+        .order('date', ascending: false);
     _streamSubscription = _transactionsStream.listen((transactions) {
       _transactionsNotifier.value = transactions;
       _calculateSummary(transactions);
@@ -63,32 +59,34 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   void _calculateSummary(List<Map<String, dynamic>> transactions) {
-    final totalIngresos = transactions
-        .where((t) => t['type'] == 'income')
-        .fold<double>(
-          0,
-          (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0),
-        );
-    final totalEgresos = transactions
-        .where((t) => t['type'] == 'expense')
-        .fold<double>(
-          0,
-          (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0),
-        );
-    final saldo = totalIngresos - totalEgresos;
-
+    double totalIngresos = 0;
+    double totalEgresos = 0;
     final Map<String, double> expenseByCategory = {};
-    transactions.where((t) => t['type'] == 'expense').forEach((t) {
-      final category = t['category'] as String;
-      final amount = (t['amount'] as num).toDouble();
-      expenseByCategory[category] = (expenseByCategory[category] ?? 0) + amount;
-    });
 
+    for (var t in transactions) {
+      final amount = (t['amount'] as num?)?.toDouble() ?? 0.0;
+      if (t['type'] == 'income') {
+        totalIngresos += amount;
+      } else {
+        totalEgresos += amount;
+        final category = t['category'] as String;
+        expenseByCategory[category] =
+            (expenseByCategory[category] ?? 0) + amount;
+      }
+    }
     _summaryNotifier.value = FinancialSummary(
       totalIngresos: totalIngresos,
       totalEgresos: totalEgresos,
-      saldo: saldo,
+      saldo: totalIngresos - totalEgresos,
       expenseByCategory: expenseByCategory,
+    );
+  }
+
+  void _navigateToAddTransaction(String type) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => AddTransactionPage(initialType: type),
+      ),
     );
   }
 
@@ -112,8 +110,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) =>
-                        AddTransactionPage(transaction: transaction),
+                    builder: (context) => AddTransactionPage(
+                      transaction: transaction,
+                      initialType: '',
+                    ),
                   ),
                 );
               },
@@ -160,11 +160,14 @@ class _TransactionsPageState extends State<TransactionsPage> {
       ),
     );
 
-    if (confirm == true) {
+    if (confirm == true && mounted) {
       try {
         await supabase.from('transactions').delete().match({
           'id': transaction['id'],
         });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Transacción eliminada')));
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -205,14 +208,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: ValueListenableBuilder<FinancialSummary>(
               valueListenable: _summaryNotifier,
-              builder: (context, summary, _) {
-                return FinancialSummaryCard(
-                  totalIngresos: currencyFormat.format(summary.totalIngresos),
-                  totalEgresos: currencyFormat.format(summary.totalEgresos),
-                  saldo: currencyFormat.format(summary.saldo),
-                  expenseData: summary.expenseByCategory,
-                );
-              },
+              builder: (context, summary, _) => FinancialSummaryCard(
+                totalIngresos: currencyFormat.format(summary.totalIngresos),
+                totalEgresos: currencyFormat.format(summary.totalEgresos),
+                saldo: currencyFormat.format(summary.saldo),
+                expenseData: summary.expenseByCategory,
+              ),
             ),
           ),
           Padding(
@@ -231,7 +232,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 if (transactions.isEmpty &&
                     _summaryNotifier.value.totalIngresos == 0 &&
                     _summaryNotifier.value.totalEgresos == 0) {
-                  // Muestra shimmer solo si no hay transacciones y los totales son cero (carga inicial)
                   if (_streamSubscription != null) {
                     return const LoadingShimmer();
                   }
@@ -266,25 +266,37 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const AddTransactionPage()),
-          );
-        },
-        backgroundColor: AppTheme.primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(left: 32.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            FloatingActionButton.extended(
+              heroTag: 'fab_expense',
+              onPressed: () => _navigateToAddTransaction('expense'),
+              label: const Text('Egreso'),
+              icon: const Icon(Icons.remove),
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            FloatingActionButton.extended(
+              heroTag: 'fab_income',
+              onPressed: () => _navigateToAddTransaction('income'),
+              label: const Text('Ingreso'),
+              icon: const Icon(Icons.add),
+              backgroundColor: AppTheme.accentColor,
+              foregroundColor: Colors.white,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class FinancialSummaryCard extends StatelessWidget {
-  final String totalIngresos;
-  final String totalEgresos;
-  final String saldo;
+  final String totalIngresos, totalEgresos, saldo;
   final Map<String, double> expenseData;
-
   const FinancialSummaryCard({
     super.key,
     required this.totalIngresos,
@@ -292,7 +304,6 @@ class FinancialSummaryCard extends StatelessWidget {
     required this.saldo,
     required this.expenseData,
   });
-
   Color _getColorForCategory(String category) {
     int hash = category.hashCode;
     double hue = (hash % 360).toDouble();
@@ -306,19 +317,20 @@ class FinancialSummaryCard extends StatelessWidget {
 
     if (totalAmount > 0) {
       expenseData.forEach((category, amount) {
-        final section = PieChartSectionData(
-          color: _getColorForCategory(category),
-          value: amount,
-          title: '${(amount / totalAmount * 100).toStringAsFixed(0)}%',
-          radius: 45,
-          titleStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            shadows: [Shadow(color: Colors.black26, blurRadius: 2)],
+        pieChartSections.add(
+          PieChartSectionData(
+            color: _getColorForCategory(category),
+            value: amount,
+            title: '${(amount / totalAmount * 100).toStringAsFixed(0)}%',
+            radius: 45,
+            titleStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              shadows: [Shadow(color: Colors.black26, blurRadius: 2)],
+            ),
           ),
         );
-        pieChartSections.add(section);
       });
     }
 
@@ -428,7 +440,7 @@ class TransactionListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIncome = transaction['type'] == 'income'; // Corregido a 'income'
+    final isIncome = transaction['type'] == 'income';
     final color = isIncome ? AppTheme.accentColor : Colors.redAccent;
     final icon = isIncome ? Icons.arrow_upward : Icons.arrow_downward;
 

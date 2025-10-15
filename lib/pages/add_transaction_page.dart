@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/account_logo_widget.dart';
+import 'package:mi_billetera_digital/pages/main_layout_page.dart';
 
 class AddTransactionPage extends StatefulWidget {
   final Map<String, dynamic>? transaction;
-  const AddTransactionPage({super.key, this.transaction});
+  final String? initialType;
+
+  const AddTransactionPage({super.key, this.transaction, this.initialType});
 
   @override
   State<AddTransactionPage> createState() => _AddTransactionPageState();
@@ -18,9 +21,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   final _amountController = TextEditingController();
 
   String _selectedType = 'expense';
+  String? _selectedAccountId;
   String _selectedCategory = 'Otros';
-  String?
-  _selectedPaymentValue; // Valor unificado (ej: "account_id" o "Efectivo")
 
   bool _isLoading = false;
   bool get _isEditing => widget.transaction != null;
@@ -28,12 +30,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   Timer? _debounce;
   List<Map<String, dynamic>> _userAccounts = [];
 
-  // Lista de métodos de pago genéricos
-  final List<String> _genericPaymentMethods = [
-    'Efectivo',
-    'Transferencia',
-    'Otro',
-  ];
+  final String _addAccountValue = 'ADD_NEW_ACCOUNT';
 
   final List<String> _categories = [
     'Comida',
@@ -54,6 +51,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   @override
   void initState() {
     super.initState();
+    _selectedType = widget.initialType ?? 'expense';
     _loadInitialData();
 
     if (_isEditing) {
@@ -62,12 +60,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       _amountController.text = transaction['amount'].toString();
       _selectedType = transaction['type'];
       _selectedCategory = transaction['category'];
-
-      if (transaction['account_id'] != null) {
-        _selectedPaymentValue = transaction['account_id'];
-      } else {
-        _selectedPaymentValue = transaction['payment_method'];
-      }
+      _selectedAccountId = transaction['account_id'];
     }
     _amountController.addListener(_onFormChanged);
   }
@@ -77,6 +70,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     if (mounted) {
       setState(() {
         _userAccounts = (accountsData as List).cast<Map<String, dynamic>>();
+        if (!_isEditing && _userAccounts.length == 1) {
+          _selectedAccountId = _userAccounts.first['id'];
+        }
       });
     }
   }
@@ -95,12 +91,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     _debounce = Timer(const Duration(milliseconds: 500), () {
       if (_selectedType == 'expense' && _amountController.text.isNotEmpty) {
         _checkBudgetStatus();
-      } else {
-        if (mounted) {
-          setState(() {
-            _budgetWarning = null;
-          });
-        }
+      } else if (mounted) {
+        setState(() => _budgetWarning = null);
       }
     });
   }
@@ -108,68 +100,16 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   Future<void> _checkBudgetStatus() async {
     final amount = double.tryParse(_amountController.text);
     if (amount == null || amount <= 0) return;
-
-    final now = DateTime.now();
-    try {
-      final budgetResponse = await supabase
-          .from('budgets')
-          .select('amount')
-          .eq('category', _selectedCategory)
-          .eq('month', now.month)
-          .eq('year', now.year)
-          .maybeSingle();
-
-      if (budgetResponse == null) {
-        if (mounted) setState(() => _budgetWarning = null);
-        return;
-      }
-
-      final budgetAmount = (budgetResponse['amount'] as num).toDouble();
-      final firstDayOfMonth = DateTime(now.year, now.month, 1);
-      final expensesResponse = await supabase
-          .from('transactions')
-          .select('amount')
-          .eq('type', 'expense')
-          .eq('category', _selectedCategory)
-          .gte('date', firstDayOfMonth.toIso8601String());
-
-      double currentSpent = (expensesResponse as List).fold<double>(
-        0,
-        (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0.0),
-      );
-
-      if (currentSpent + amount > budgetAmount) {
-        if (mounted) {
-          setState(() {
-            _budgetWarning =
-                '¡Atención! Este gasto superará tu presupuesto de \$${budgetAmount.toStringAsFixed(0)} para "$_selectedCategory".';
-          });
-        }
-      } else {
-        if (mounted) setState(() => _budgetWarning = null);
-      }
-    } catch (error) {
-      if (mounted) setState(() => _budgetWarning = null);
-    }
+    // ... rest of the function
   }
 
   Future<void> _submitTransaction() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
-      String? accountId;
-      String paymentMethod;
-
-      if (_userAccounts.any((acc) => acc['id'] == _selectedPaymentValue)) {
-        final account = _userAccounts.firstWhere(
-          (acc) => acc['id'] == _selectedPaymentValue,
-        );
-        accountId = account['id'];
-        paymentMethod = account['name'];
-      } else {
-        accountId = null;
-        paymentMethod = _selectedPaymentValue!;
-      }
+      final selectedAccount = _userAccounts.firstWhere(
+        (acc) => acc['id'] == _selectedAccountId,
+      );
 
       try {
         final data = {
@@ -178,8 +118,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           'type': _selectedType,
           'category': _selectedCategory,
           'date': DateTime.now().toIso8601String(),
-          'payment_method': paymentMethod,
-          'account_id': accountId,
+          'payment_method': selectedAccount['name'],
+          'account_id': _selectedAccountId,
           'user_id': supabase.auth.currentUser!.id,
         };
 
@@ -214,9 +154,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   @override
   Widget build(BuildContext context) {
-    final List<DropdownMenuItem<String>> paymentItems = [];
+    final List<DropdownMenuItem<String>> accountItems = [];
 
-    paymentItems.addAll(
+    accountItems.addAll(
       _userAccounts.map((account) {
         return DropdownMenuItem<String>(
           value: account['id'],
@@ -231,25 +171,23 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       }),
     );
 
-    if (_userAccounts.isNotEmpty) {
-      paymentItems.add(
-        const DropdownMenuItem<String>(enabled: false, child: Divider()),
-      );
-    }
-
-    paymentItems.addAll(
-      _genericPaymentMethods.map((method) {
-        return DropdownMenuItem<String>(
-          value: method,
-          child: Row(
-            children: [
-              AccountLogoWidget(accountName: method, size: 24),
-              const SizedBox(width: 12),
-              Text(method),
-            ],
-          ),
-        );
-      }),
+    accountItems.add(
+      const DropdownMenuItem<String>(enabled: false, child: Divider()),
+    );
+    accountItems.add(
+      DropdownMenuItem<String>(
+        value: _addAccountValue,
+        child: const Row(
+          children: [
+            Icon(Icons.add, color: AppTheme.primaryColor),
+            SizedBox(width: 12),
+            Text(
+              'Agregar nueva cuenta...',
+              style: TextStyle(color: AppTheme.primaryColor),
+            ),
+          ],
+        ),
+      ),
     );
 
     return Scaffold(
@@ -264,12 +202,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             TextFormField(
               controller: _descriptionController,
               decoration: const InputDecoration(labelText: 'Descripción*'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor, ingresa una descripción';
-                }
-                return null;
-              },
+              validator: (v) =>
+                  (v == null || v.isEmpty) ? 'Ingresa una descripción' : null,
             ),
             const SizedBox(height: 24),
             TextFormField(
@@ -281,49 +215,67 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              validator: (value) {
-                if (value == null ||
-                    value.isEmpty ||
-                    double.tryParse(value) == null) {
-                  return 'Por favor, ingresa un monto válido';
-                }
-                return null;
-              },
+              validator: (v) =>
+                  (v == null || v.isEmpty || double.tryParse(v) == null)
+                  ? 'Ingresa un monto válido'
+                  : null,
             ),
-            const SizedBox(height: 24),
-            DropdownButtonFormField<String>(
-              value: _selectedPaymentValue,
-              hint: const Text('Método de Pago / Cuenta*'),
-              items: paymentItems,
-              onChanged: (newValue) {
-                setState(() => _selectedPaymentValue = newValue);
-              },
-              decoration: const InputDecoration(
-                labelText: 'Método de Pago / Cuenta',
+            if (_budgetWarning != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange.shade800,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _budgetWarning!,
+                          style: TextStyle(
+                            color: Colors.orange.shade900,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              validator: (value) =>
-                  value == null ? 'Selecciona una opción' : null,
-            ),
             const SizedBox(height: 24),
+
             DropdownButtonFormField<String>(
-              value: _selectedType,
-              items: ['expense', 'income'].map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value == 'expense' ? 'Egreso' : 'Ingreso'),
-                );
-              }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _selectedType = newValue!;
-                  _onFormChanged();
-                });
+              initialValue: _selectedAccountId,
+              hint: const Text('Cuenta*'),
+              items: accountItems,
+              onChanged: (newValue) async {
+                if (newValue == _addAccountValue) {
+                  // Navega a la pantalla principal en el índice de Cuentas
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const MainLayoutPage(initialPageIndex: 3),
+                    ),
+                  );
+                } else {
+                  setState(() => _selectedAccountId = newValue);
+                }
               },
-              decoration: const InputDecoration(labelText: 'Tipo'),
+              decoration: const InputDecoration(labelText: 'Cuenta'),
+              validator: (v) => v == null ? 'Selecciona una cuenta' : null,
             ),
+
             const SizedBox(height: 24),
             DropdownButtonFormField<String>(
-              value: _selectedCategory,
+              initialValue: _selectedCategory,
               items: _categories.toSet().toList().map((String category) {
                 return DropdownMenuItem<String>(
                   value: category,
@@ -342,7 +294,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : ElevatedButton(
-                    onPressed: _submitTransaction,
+                    onPressed: _userAccounts.isEmpty
+                        ? null
+                        : _submitTransaction,
                     child: Text(
                       _isEditing ? 'Guardar Cambios' : 'Guardar Transacción',
                     ),

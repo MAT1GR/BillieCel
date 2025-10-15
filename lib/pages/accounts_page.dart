@@ -44,12 +44,7 @@ class _AccountsPageState extends State<AccountsPage> {
     final toInsert = <Map<String, dynamic>>[];
     for (final name in _defaultAccounts) {
       if (!existing.contains(name.toLowerCase())) {
-        toInsert.add({
-          'name': name,
-          'balance': 0.0,
-          'user_id': userId,
-          // 'holder_full_name': null, // opcional
-        });
+        toInsert.add({'name': name, 'balance': 0.0, 'user_id': userId});
       }
     }
 
@@ -88,7 +83,6 @@ class _AccountsPageState extends State<AccountsPage> {
             );
           }
 
-          // Efectivo y Transferencia arriba
           accounts.sort((a, b) {
             int rank(String name) {
               final n = name.toLowerCase();
@@ -294,13 +288,13 @@ class _AccountsPageState extends State<AccountsPage> {
     final formKey = GlobalKey<FormState>();
     final isEditing = account != null;
     final nameController = TextEditingController(
-      text: isEditing ? account!['name'] : '',
+      text: isEditing ? account['name'] : '',
     );
     final balanceController = TextEditingController(
-      text: isEditing ? (account!['balance'] as num).toString() : '0',
+      text: isEditing ? (account['balance'] as num).toString() : '0',
     );
     final holderController = TextEditingController(
-      text: isEditing ? (account!['holder_full_name'] ?? '') : '',
+      text: isEditing ? (account['holder_full_name'] ?? '') : '',
     );
 
     const List<String> suggestions = [
@@ -330,60 +324,41 @@ class _AccountsPageState extends State<AccountsPage> {
       builder: (context) {
         return AlertDialog(
           title: Text(isEditing ? 'Editar Cuenta' : 'Nueva Cuenta'),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // --- Autocomplete (con apertura inmediata si querés mantener tu versión) ---
-                Autocomplete<String>(
-                  initialValue: TextEditingValue(text: nameController.text),
-                  optionsBuilder: (TextEditingValue textEditingValue) {
-                    final q = textEditingValue.text.trim();
-                    if (q.isEmpty) return suggestions;
-                    return suggestions.where(
-                      (o) => o.toLowerCase().contains(q.toLowerCase()),
-                    );
-                  },
-                  onSelected: (sel) {
-                    nameController.text = sel;
-                    FocusScope.of(context).nextFocus();
-                  },
-                  fieldViewBuilder:
-                      (context, controller, focusNode, onFieldSubmitted) {
-                        if (controller.text != nameController.text) {
-                          controller.text = nameController.text;
-                          controller.selection = TextSelection.fromPosition(
-                            TextPosition(offset: controller.text.length),
-                          );
-                        }
-                        // Apertura inmediata (opcional):
-                        focusNode.addListener(() {
-                          if (focusNode.hasFocus &&
-                              controller.text.trim().isEmpty) {
-                            controller.text = ' ';
-                            controller.selection = TextSelection.collapsed(
-                              offset: controller.text.length,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20.0,
+            vertical: 24.0,
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Autocomplete<String>(
+                    initialValue: TextEditingValue(text: nameController.text),
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      final q = textEditingValue.text.trim();
+                      if (q.isEmpty) return suggestions;
+                      return suggestions.where(
+                        (o) => o.toLowerCase().contains(q.toLowerCase()),
+                      );
+                    },
+                    onSelected: (sel) {
+                      nameController.text = sel;
+                      FocusScope.of(context).nextFocus();
+                    },
+                    fieldViewBuilder:
+                        (context, controller, focusNode, onFieldSubmitted) {
+                          if (controller.text != nameController.text) {
+                            controller.text = nameController.text;
+                            controller.selection = TextSelection.fromPosition(
+                              TextPosition(offset: controller.text.length),
                             );
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              controller.text = '';
-                              controller.selection =
-                                  const TextSelection.collapsed(offset: 0);
-                            });
                           }
-                        });
-                        return TextFormField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          decoration: const InputDecoration(
-                            labelText: 'Nombre de la Cuenta',
-                          ),
-                          validator: (v) => v == null || v.isEmpty
-                              ? 'Ingresa un nombre'
-                              : null,
-                          onChanged: (v) => nameController.text = v,
-                          onTap: () {
-                            if (controller.text.trim().isEmpty) {
+                          focusNode.addListener(() {
+                            if (focusNode.hasFocus &&
+                                controller.text.trim().isEmpty) {
                               controller.text = ' ';
                               controller.selection = TextSelection.collapsed(
                                 offset: controller.text.length,
@@ -394,70 +369,102 @@ class _AccountsPageState extends State<AccountsPage> {
                                     const TextSelection.collapsed(offset: 0);
                               });
                             }
-                          },
-                        );
-                      },
-                  optionsViewBuilder: (context, onSelected, options) {
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: Material(
-                        elevation: 4.0,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 250),
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            itemCount: options.length,
-                            itemBuilder: (context, i) {
-                              final option = options.elementAt(i);
-                              return InkWell(
-                                onTap: () => onSelected(option),
-                                child: ListTile(
-                                  leading: AccountLogoWidget(
-                                    accountName: option,
-                                    size: 24,
-                                  ),
-                                  title: Text(option),
-                                ),
-                              );
+                          });
+                          return TextFormField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre de la Cuenta',
+                            ),
+                            validator: (v) => v == null || v.isEmpty
+                                ? 'Ingresa un nombre'
+                                : null,
+                            onChanged: (v) => nameController.text = v,
+                            onTap: () {
+                              if (controller.text.trim().isEmpty) {
+                                controller.text = ' ';
+                                controller.selection = TextSelection.collapsed(
+                                  offset: controller.text.length,
+                                );
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  controller.text = '';
+                                  controller.selection =
+                                      const TextSelection.collapsed(offset: 0);
+                                });
+                              }
                             },
+                          );
+                        },
+                    optionsViewBuilder: (context, onSelected, options) {
+                      return Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          elevation: 4.0,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 250),
+                            child: ListView.builder(
+                              padding: EdgeInsets.zero,
+                              itemCount: options.length,
+                              itemBuilder: (context, i) {
+                                final option = options.elementAt(i);
+                                // ===== CAMBIO PRINCIPAL AQUÍ =====
+                                return InkWell(
+                                  onTap: () => onSelected(option),
+                                  child: Padding(
+                                    // Añadimos Padding para dar más altura
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4.0,
+                                    ),
+                                    child: ListTile(
+                                      leading: AccountLogoWidget(
+                                        accountName: option,
+                                        size: 24,
+                                      ),
+                                      title: Text(option),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
 
-                const SizedBox(height: 12),
-                // --- Titular opcional ---
-                TextFormField(
-                  controller: holderController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre y apellido (opcional)',
-                    hintText: 'Ej: Juan Pérez',
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: holderController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre y apellido (opcional)',
+                      hintText: 'Ej: Juan Pérez',
+                    ),
+                    textCapitalization: TextCapitalization.words,
                   ),
-                  textCapitalization: TextCapitalization.words,
-                ),
 
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: balanceController,
-                  decoration: InputDecoration(
-                    labelText: isEditing ? 'Saldo Actual' : 'Saldo Inicial',
-                    prefixText: '\$ ',
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: balanceController,
+                    decoration: InputDecoration(
+                      labelText: isEditing ? 'Saldo Actual' : 'Saldo Inicial',
+                      prefixText: '\$ ',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    validator: (value) {
+                      if (value == null ||
+                          value.isEmpty ||
+                          double.tryParse(value) == null) {
+                        return 'Ingresa un saldo válido';
+                      }
+                      return null;
+                    },
                   ),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  validator: (value) {
-                    if (value == null ||
-                        value.isEmpty ||
-                        double.tryParse(value) == null) {
-                      return 'Ingresa un saldo válido';
-                    }
-                    return null;
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           actions: [
@@ -479,7 +486,7 @@ class _AccountsPageState extends State<AccountsPage> {
                   try {
                     if (isEditing) {
                       await supabase.from('accounts').update(data).match({
-                        'id': account!['id'],
+                        'id': account['id'],
                       });
                     } else {
                       await supabase.from('accounts').insert(data);
@@ -564,19 +571,17 @@ class _AccountHistoryPreview extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             ...txs.take(5).map((t) {
+              final isIncome = t['type'] == 'income';
               final amount = (t['amount'] as num).toDouble();
-              final isOut = amount < 0;
-              final dateStr = DateFormat(
-                'dd/MM/yyyy HH:mm',
-              ).format(DateTime.parse(t['created_at'] as String).toLocal());
+
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 3.0),
                 child: Row(
                   children: [
                     Icon(
-                      isOut ? Icons.south_east : Icons.north_west,
+                      isIncome ? Icons.north_west : Icons.south_east,
                       size: 16,
-                      color: isOut ? Colors.redAccent : Colors.green,
+                      color: isIncome ? Colors.green : Colors.redAccent,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -594,7 +599,7 @@ class _AccountHistoryPreview extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: isOut ? Colors.redAccent : Colors.green,
+                        color: isIncome ? Colors.green : Colors.redAccent,
                       ),
                     ),
                   ],

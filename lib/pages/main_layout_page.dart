@@ -6,7 +6,7 @@ import 'package:mi_billetera_digital/pages/tasks_page.dart';
 import 'package:mi_billetera_digital/pages/accounts_page.dart'; // <-- Importación añadida
 
 class MainLayoutPage extends StatefulWidget {
-  const MainLayoutPage({super.key});
+  const MainLayoutPage({super.key, required int initialPageIndex});
 
   @override
   State<MainLayoutPage> createState() => _MainLayoutPageState();

@@ -29,7 +29,7 @@ class _SplashPageState extends State<SplashPage> {
       // Si hay sesión, va a la HomePage.
       Navigator.of(context).pushReplacement(
         // dentro de splash_page.dart
-        MaterialPageRoute(builder: (context) => const MainLayoutPage()),
+        MaterialPageRoute(builder: (context) => const MainLayoutPage(initialPageIndex: 0)),
       );
     } else {
       // Si no hay sesión, va a la LoginPage.

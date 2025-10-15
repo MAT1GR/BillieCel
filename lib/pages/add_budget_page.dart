@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
 
 class AddBudgetPage extends StatefulWidget {
-  const AddBudgetPage({super.key});
+  const AddBudgetPage({super.key, required Map<String, dynamic> budget});
 
   @override
   State<AddBudgetPage> createState() => _AddBudgetPageState();

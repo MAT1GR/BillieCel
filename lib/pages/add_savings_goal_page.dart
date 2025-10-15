@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
 
 class AddSavingsGoalPage extends StatefulWidget {
-  const AddSavingsGoalPage({super.key});
+  const AddSavingsGoalPage({super.key, required Map<String, dynamic> goal});
 
   @override
   State<AddSavingsGoalPage> createState() => _AddSavingsGoalPageState();

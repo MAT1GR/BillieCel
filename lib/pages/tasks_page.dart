@@ -7,6 +7,7 @@ import 'package:mi_billetera_digital/pages/login_page.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
+import 'package:mi_billetera_digital/pages/profile_page.dart';
 
 class TasksPage extends StatefulWidget {
   const TasksPage({super.key});
@@ -139,15 +140,11 @@ class _TasksPageState extends State<TasksPage> {
         title: 'Mis Tareas',
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await supabase.auth.signOut();
-              if (mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                  (route) => false,
-                );
-              }
+            icon: const Icon(Icons.account_circle_outlined), // Icono de perfil
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const ProfilePage()),
+              );
             },
           ),
         ],

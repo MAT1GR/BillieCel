@@ -9,18 +9,25 @@ import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/pages/transaction_detail_page.dart';
 import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
+import 'package:mi_billetera_digital/pages/profile_page.dart';
 
 class FinancialSummary {
   final double totalIngresos;
   final double totalEgresos;
-  final double saldo;
+  final double saldo; // Este es el saldo de transacciones (ingresos - egresos)
   final Map<String, double> expenseByCategory;
+  final double totalBalance; // Saldo total de todas las cuentas
+  final double cashBalance; // Saldo solo de efectivo
+  final double virtualBalance; // Saldo del resto de las cuentas
 
   FinancialSummary({
     this.totalIngresos = 0.0,
     this.totalEgresos = 0.0,
     this.saldo = 0.0,
     this.expenseByCategory = const {},
+    this.totalBalance = 0.0,
+    this.cashBalance = 0.0,
+    this.virtualBalance = 0.0,
   });
 }
 
@@ -32,34 +39,62 @@ class TransactionsPage extends StatefulWidget {
 }
 
 class _TransactionsPageState extends State<TransactionsPage> {
+  // Streams para transacciones y cuentas
   late final Stream<List<Map<String, dynamic>>> _transactionsStream;
-  StreamSubscription? _streamSubscription;
+  late final Stream<List<Map<String, dynamic>>> _accountsStream;
+  StreamSubscription? _transactionsSubscription;
+  StreamSubscription? _accountsSubscription;
+
+  // Notificadores para actualizar la UI
   final _summaryNotifier = ValueNotifier<FinancialSummary>(FinancialSummary());
   final _transactionsNotifier = ValueNotifier<List<Map<String, dynamic>>>([]);
+  final _accountsNotifier = ValueNotifier<List<Map<String, dynamic>>>([]);
+
   final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$ ');
 
   @override
   void initState() {
     super.initState();
+    // Preparamos los streams
     _transactionsStream = supabase
         .from('transactions')
         .stream(primaryKey: ['id'])
         .order('date', ascending: false);
-    _streamSubscription = _transactionsStream.listen((transactions) {
+    _accountsStream = supabase
+        .from('accounts')
+        .stream(primaryKey: ['id'])
+        .order('name');
+
+    // Escuchamos los cambios en las transacciones
+    _transactionsSubscription = _transactionsStream.listen((transactions) {
       _transactionsNotifier.value = transactions;
-      _calculateSummary(transactions);
+      _recalculateSummary();
+    });
+
+    // Escuchamos los cambios en las cuentas
+    _accountsSubscription = _accountsStream.listen((accounts) {
+      _accountsNotifier.value = accounts;
+      _recalculateSummary();
     });
   }
 
   @override
   void dispose() {
-    _streamSubscription?.cancel();
+    // Cancelamos las suscripciones para evitar errores
+    _transactionsSubscription?.cancel();
+    _accountsSubscription?.cancel();
     _summaryNotifier.dispose();
     _transactionsNotifier.dispose();
+    _accountsNotifier.dispose();
     super.dispose();
   }
 
-  void _calculateSummary(List<Map<String, dynamic>> transactions) {
+  void _recalculateSummary() {
+    // Obtenemos los datos más recientes de los notificadores
+    final transactions = _transactionsNotifier.value;
+    final accounts = _accountsNotifier.value;
+
+    // Calculamos ingresos, egresos y gastos por categoría
     double totalIngresos = 0;
     double totalEgresos = 0;
     final Map<String, double> expenseByCategory = {};
@@ -75,11 +110,31 @@ class _TransactionsPageState extends State<TransactionsPage> {
             (expenseByCategory[category] ?? 0) + amount;
       }
     }
+
+    // Calculamos los balances de las cuentas
+    double totalBalance = 0;
+    double cashBalance = 0;
+    double virtualBalance = 0;
+
+    for (var acc in accounts) {
+      final balance = (acc['balance'] as num?)?.toDouble() ?? 0.0;
+      totalBalance += balance;
+      if ((acc['name'] as String).toLowerCase() == 'efectivo') {
+        cashBalance += balance;
+      } else {
+        virtualBalance += balance;
+      }
+    }
+
+    // Actualizamos el notificador del resumen con toda la información
     _summaryNotifier.value = FinancialSummary(
       totalIngresos: totalIngresos,
       totalEgresos: totalEgresos,
       saldo: totalIngresos - totalEgresos,
       expenseByCategory: expenseByCategory,
+      totalBalance: totalBalance,
+      cashBalance: cashBalance,
+      virtualBalance: virtualBalance,
     );
   }
 
@@ -189,15 +244,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
         title: 'Resumen Financiero',
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await supabase.auth.signOut();
-              if (mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                  (route) => false,
-                );
-              }
+            icon: const Icon(Icons.account_circle_outlined), // Icono de perfil
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const ProfilePage()),
+              );
             },
           ),
         ],
@@ -212,7 +263,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
               builder: (context, summary, _) => FinancialSummaryCard(
                 totalIngresos: currencyFormat.format(summary.totalIngresos),
                 totalEgresos: currencyFormat.format(summary.totalEgresos),
-                saldo: currencyFormat.format(summary.saldo),
+                saldo: currencyFormat.format(
+                  summary.totalBalance,
+                ), // Usamos el nuevo saldo total
+                cashBalance: currencyFormat.format(
+                  summary.cashBalance,
+                ), // Pasamos el saldo de efectivo
+                virtualBalance: currencyFormat.format(
+                  summary.virtualBalance,
+                ), // Pasamos el saldo virtual
                 expenseData: summary.expenseByCategory,
               ),
             ),
@@ -233,7 +292,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 if (transactions.isEmpty &&
                     _summaryNotifier.value.totalIngresos == 0 &&
                     _summaryNotifier.value.totalEgresos == 0) {
-                  if (_streamSubscription != null) {
+                  // Muestra el shimmer solo si no hay datos iniciales
+                  if (_accountsNotifier.value.isEmpty) {
                     return const LoadingShimmer();
                   }
                 }
@@ -296,15 +356,19 @@ class _TransactionsPageState extends State<TransactionsPage> {
 }
 
 class FinancialSummaryCard extends StatelessWidget {
-  final String totalIngresos, totalEgresos, saldo;
+  final String totalIngresos, totalEgresos, saldo, cashBalance, virtualBalance;
   final Map<String, double> expenseData;
+
   const FinancialSummaryCard({
     super.key,
     required this.totalIngresos,
     required this.totalEgresos,
     required this.saldo,
+    required this.cashBalance,
+    required this.virtualBalance,
     required this.expenseData,
   });
+
   Color _getColorForCategory(String category) {
     int hash = category.hashCode;
     double hue = (hash % 360).toDouble();
@@ -344,25 +408,47 @@ class FinancialSummaryCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Saldo Actual',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppTheme.subtextColor,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Saldo Total', // <-- Título cambiado
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(color: AppTheme.subtextColor),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      saldo,
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor,
+                      const SizedBox(height: 8),
+                      Text(
+                        saldo,
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryColor,
+                            ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      // --- NUEVO: Desglose de efectivo y virtual ---
+                      Row(
+                        children: [
+                          _buildBalanceDetail(
+                            context,
+                            Icons.money,
+                            'Efectivo',
+                            cashBalance,
                           ),
-                    ),
-                  ],
+                          const SizedBox(width: 16),
+                          _buildBalanceDetail(
+                            context,
+                            Icons.credit_card,
+                            'Virtual',
+                            virtualBalance,
+                          ),
+                        ],
+                      ),
+                      // --- FIN DEL NUEVO WIDGET ---
+                    ],
+                  ),
                 ),
                 SizedBox(
                   height: 100,
@@ -389,12 +475,12 @@ class FinancialSummaryCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildIncomeExpenseColumn(
-                  'Ingresos',
+                  'Ingresos (Mes)',
                   totalIngresos,
                   AppTheme.accentColor,
                 ),
                 _buildIncomeExpenseColumn(
-                  'Egresos',
+                  'Egresos (Mes)',
                   totalEgresos,
                   Colors.redAccent,
                 ),
@@ -405,6 +491,34 @@ class FinancialSummaryCard extends StatelessWidget {
       ),
     );
   }
+
+  // --- WIDGET AUXILIAR NUEVO ---
+  Widget _buildBalanceDetail(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String amount,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, color: AppTheme.subtextColor, size: 14),
+        const SizedBox(width: 4),
+        Text(
+          '$label: ',
+          style: const TextStyle(fontSize: 12, color: AppTheme.subtextColor),
+        ),
+        Text(
+          amount,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.subtextColor,
+          ),
+        ),
+      ],
+    );
+  }
+  // --- FIN DEL WIDGET AUXILIAR ---
 
   Widget _buildIncomeExpenseColumn(String title, String amount, Color color) {
     return Column(

@@ -22,11 +22,16 @@ class _BudgetsPageState extends State<BudgetsPage> {
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _budgetsStream = supabase
-        .from('budgets')
-        .eq('month', now.month)
-        .eq('year', now.year)
-        .stream(primaryKey: ['id']);
+    _budgetsStream = supabase.from('budgets').stream(primaryKey: ['id']).map((
+      listOfBudgets,
+    ) {
+      return listOfBudgets
+          .where(
+            (budget) =>
+                budget['month'] == now.month && budget['year'] == now.year,
+          )
+          .toList();
+    });
   }
 
   @override
@@ -183,10 +188,6 @@ class _BudgetsPageState extends State<BudgetsPage> {
       }
     }
   }
-}
-
-extension on SupabaseQueryBuilder {
-  eq(String s, int month) {}
 }
 
 class BudgetListItem extends StatelessWidget {

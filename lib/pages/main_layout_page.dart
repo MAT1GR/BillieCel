@@ -3,7 +3,7 @@ import 'package:mi_billetera_digital/pages/transactions_page.dart';
 import 'package:mi_billetera_digital/pages/budgets_page.dart';
 import 'package:mi_billetera_digital/pages/savings_goals_page.dart';
 import 'package:mi_billetera_digital/pages/tasks_page.dart';
-import 'package:mi_billetera_digital/pages/accounts_page.dart'; // <-- Importación añadida
+import 'package:mi_billetera_digital/pages/accounts_page.dart';
 
 class MainLayoutPage extends StatefulWidget {
   final int initialPageIndex;
@@ -22,12 +22,12 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
     _selectedIndex = widget.initialPageIndex;
   }
 
-  // Lista de todas las páginas principales de la app
+  // --- LISTA DE PÁGINAS REORDENADA ---
   static const List<Widget> _widgetOptions = <Widget>[
     TransactionsPage(),
+    AccountsPage(),
     BudgetsPage(),
     SavingsGoalsPage(),
-    AccountsPage(), // <-- Página de Cuentas añadida
     TasksPage(),
   ];
 
@@ -43,11 +43,17 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
+        // --- LISTA DE ÍTEMS REORDENADA ---
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet_outlined),
             activeIcon: Icon(Icons.account_balance_wallet),
-            label: 'Transacciones',
+            label: 'Resumen', // Cambiado para mayor claridad
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.credit_card_outlined),
+            activeIcon: Icon(Icons.credit_card),
+            label: 'Cuentas',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.pie_chart_outline),
@@ -58,12 +64,6 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
             icon: Icon(Icons.star_border_outlined),
             activeIcon: Icon(Icons.star),
             label: 'Metas',
-          ),
-          BottomNavigationBarItem(
-            // <-- Nuevo ítem para Cuentas
-            icon: Icon(Icons.credit_card_outlined),
-            activeIcon: Icon(Icons.credit_card),
-            label: 'Cuentas',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.checklist_outlined),

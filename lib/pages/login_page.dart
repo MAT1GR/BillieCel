@@ -125,10 +125,11 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
-                    Icons.wallet,
-                    size: 80,
-                    color: AppTheme.primaryColor,
+                  // --- CAMBIO AQUÍ ---
+                  // Reemplazamos el Icon por tu logo
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16.0),
+                    child: Image.asset('assets/images/logo.png', height: 80),
                   ),
                   const SizedBox(height: 24),
                   Text(

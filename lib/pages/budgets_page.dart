@@ -4,7 +4,8 @@ import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/pages/add_budget_page.dart';
-import 'package:supabase/src/supabase_stream_builder.dart';
+import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
+import 'package:supabase/src/supabase_query_builder.dart';
 
 class BudgetsPage extends StatefulWidget {
   const BudgetsPage({super.key});
@@ -23,15 +24,15 @@ class _BudgetsPageState extends State<BudgetsPage> {
     final now = DateTime.now();
     _budgetsStream = supabase
         .from('budgets')
-        .stream(primaryKey: ['id'])
         .eq('month', now.month)
-        .eq('year', now.year);
+        .eq('year', now.year)
+        .stream(primaryKey: ['id']);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Presupuestos del Mes')),
+      appBar: MyAppBar(title: 'Presupuestos del Mes'),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _budgetsStream,
         builder: (context, snapshot) {
@@ -184,10 +185,8 @@ class _BudgetsPageState extends State<BudgetsPage> {
   }
 }
 
-extension on SupabaseStreamBuilder {
-  Stream<List<Map<String, dynamic>>> eq(String s, int year) {
-    throw UnimplementedError('eq method is not implemented.');
-  }
+extension on SupabaseQueryBuilder {
+  eq(String s, int month) {}
 }
 
 class BudgetListItem extends StatelessWidget {

@@ -6,7 +6,8 @@ import 'package:mi_billetera_digital/pages/tasks_page.dart';
 import 'package:mi_billetera_digital/pages/accounts_page.dart'; // <-- Importación añadida
 
 class MainLayoutPage extends StatefulWidget {
-  const MainLayoutPage({super.key, required int initialPageIndex});
+  final int initialPageIndex;
+  const MainLayoutPage({super.key, required this.initialPageIndex});
 
   @override
   State<MainLayoutPage> createState() => _MainLayoutPageState();
@@ -14,6 +15,12 @@ class MainLayoutPage extends StatefulWidget {
 
 class _MainLayoutPageState extends State<MainLayoutPage> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialPageIndex;
+  }
 
   // Lista de todas las páginas principales de la app
   static const List<Widget> _widgetOptions = <Widget>[

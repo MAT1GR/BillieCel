@@ -251,20 +251,21 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 ),
               ),
             const SizedBox(height: 24),
-
             DropdownButtonFormField<String>(
-              initialValue: _selectedAccountId,
+              value: _selectedAccountId,
               hint: const Text('Cuenta*'),
               items: accountItems,
               onChanged: (newValue) async {
                 if (newValue == _addAccountValue) {
-                  // Navega a la pantalla principal en el índice de Cuentas
-                  Navigator.of(context).pushReplacement(
+                  // Navega a la pantalla de Cuentas
+                  await Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) =>
                           const MainLayoutPage(initialPageIndex: 3),
                     ),
                   );
+                  // Recarga las cuentas al volver
+                  _loadInitialData();
                 } else {
                   setState(() => _selectedAccountId = newValue);
                 }
@@ -272,10 +273,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               decoration: const InputDecoration(labelText: 'Cuenta'),
               validator: (v) => v == null ? 'Selecciona una cuenta' : null,
             ),
-
             const SizedBox(height: 24),
             DropdownButtonFormField<String>(
-              initialValue: _selectedCategory,
+              value: _selectedCategory,
               items: _categories.toSet().toList().map((String category) {
                 return DropdownMenuItem<String>(
                   value: category,

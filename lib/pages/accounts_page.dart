@@ -5,6 +5,7 @@ import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/pages/account_detail_page.dart';
 import 'package:mi_billetera_digital/widgets/account_logo_widget.dart';
+import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
 
 class AccountsPage extends StatefulWidget {
   const AccountsPage({super.key});
@@ -58,7 +59,7 @@ class _AccountsPageState extends State<AccountsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis Cuentas')),
+      appBar: MyAppBar(title: 'Mis Cuentas'),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _accountsStream,
         builder: (context, snapshot) {

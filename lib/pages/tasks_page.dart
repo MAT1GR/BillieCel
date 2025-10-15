@@ -6,6 +6,7 @@ import 'package:mi_billetera_digital/pages/add_task_page.dart';
 import 'package:mi_billetera_digital/pages/login_page.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
+import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
 
 class TasksPage extends StatefulWidget {
   const TasksPage({super.key});
@@ -134,8 +135,8 @@ class _TasksPageState extends State<TasksPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mis Tareas'),
+      appBar: MyAppBar(
+        title: 'Mis Tareas',
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),

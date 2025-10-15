@@ -5,6 +5,7 @@ import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/pages/add_savings_goal_page.dart';
 import 'package:mi_billetera_digital/pages/add_funds_page.dart';
+import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
 
 class SavingsGoalsPage extends StatefulWidget {
   const SavingsGoalsPage({super.key});
@@ -119,7 +120,7 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Metas de Ahorro')),
+      appBar: MyAppBar(title: 'Metas de Ahorro'),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _goalsStream,
         builder: (context, snapshot) {

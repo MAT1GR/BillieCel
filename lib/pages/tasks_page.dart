@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/pages/add_task_page.dart';
-import 'package:mi_billetera_digital/pages/login_page.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/widgets/my_app_bar.dart';

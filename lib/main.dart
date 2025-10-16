@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
-import 'package:mi_billetera_digital/pages/splash_page.dart';
+import 'package:mi_billetera_digital/pages/auth_gate_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart'; // <-- 1. Importa esta librería
 
@@ -26,11 +26,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Mi Billetera Digital',
-      theme: AppTheme.theme,
-      debugShowCheckedModeBanner: false,
-      home: const SplashPage(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: AppTheme.themeNotifier,
+      builder: (context, currentMode, child) {
+        return MaterialApp(
+          title: 'Mi Billetera Digital',
+          theme: AppTheme.theme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: currentMode,
+          debugShowCheckedModeBanner: false,
+          home: const AuthGatePage(),
+        );
+      },
     );
   }
 }

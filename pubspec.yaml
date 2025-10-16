@@ -20,12 +20,14 @@ dependencies:
   shimmer: ^3.0.0
   home_widget: ^0.8.0
   flutter_svg: ^2.0.10+1 # Paquete que queremos añadir
+  local_auth: ^2.2.0
+  shared_preferences: ^2.2.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^5.0.0 # Asegurado que esté en la sección correcta
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true

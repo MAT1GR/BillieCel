@@ -4,7 +4,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'dart:async';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/pages/add_transaction_page.dart';
-import 'package:mi_billetera_digital/pages/login_page.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/pages/transaction_detail_page.dart';
@@ -429,7 +428,8 @@ class FinancialSummaryCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       // --- NUEVO: Desglose de efectivo y virtual ---
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildBalanceDetail(
                             context,
@@ -437,7 +437,7 @@ class FinancialSummaryCard extends StatelessWidget {
                             'Efectivo',
                             cashBalance,
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(height: 8),
                           _buildBalanceDetail(
                             context,
                             Icons.credit_card,

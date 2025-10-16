@@ -68,16 +68,28 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
     try {
-      await supabase.auth.signUp(
+      final authResponse = await supabase.auth.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Registro exitoso! Ya puedes iniciar sesión.'),
-          ),
-        );
+      if (authResponse.user != null) {
+        await _createDefaultAccounts(authResponse.user!.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Registro exitoso! Ya puedes iniciar sesión.'),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Error en el registro. Inténtalo de nuevo.'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
       }
     } on AuthException catch (error) {
       if (mounted) {
@@ -102,6 +114,27 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _createDefaultAccounts(String userId) async {
+    try {
+      await supabase.from('accounts').insert([
+        {
+          'name': 'Efectivo',
+          'balance': 0.0,
+          'user_id': userId,
+        },
+        {
+          'name': 'Transferencia',
+          'balance': 0.0,
+          'user_id': userId,
+        },
+      ]);
+    } catch (error) {
+      // It's better to log this error and not block the user.
+      // In a real app, you might want to have a more robust error handling mechanism.
+      print('Error creating default accounts: $error');
     }
   }
 

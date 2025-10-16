@@ -4,7 +4,7 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
 
-  MyAppBar({
+  const MyAppBar({
     super.key,
     required this.title,
     this.actions,

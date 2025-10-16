@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/account_logo_widget.dart';
+import 'package:mi_billetera_digital/pages/add_category_page.dart';
 import 'package:mi_billetera_digital/pages/main_layout_page.dart';
 
 class AddTransactionPage extends StatefulWidget {
@@ -29,24 +30,31 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   String? _budgetWarning;
   Timer? _debounce;
   List<Map<String, dynamic>> _userAccounts = [];
+  List<Map<String, dynamic>> _userCategories = [];
 
   final String _addAccountValue = 'ADD_NEW_ACCOUNT';
+  final String _addCategoryValue = 'ADD_NEW_CATEGORY';
 
-  final List<String> _categories = [
-    'Comida',
-    'Transporte',
-    'Vivienda',
-    'Suscripciones',
-    'Ocio',
-    'Salud',
-    'Sueldo',
-    'Otros',
-    'Alimentación',
-    'Entretenimiento',
-    'Educación',
-    'Servicios',
-    'Inversiones',
-  ];
+  final Map<String, IconData> _iconMap = {
+    'category': Icons.category,
+    'fastfood': Icons.fastfood,
+    'directions_bus': Icons.directions_bus,
+    'hotel': Icons.hotel,
+    'healing': Icons.healing,
+    'theaters': Icons.theaters,
+    'shopping_cart': Icons.shopping_cart,
+    'home': Icons.home,
+    'school': Icons.school,
+    'pets': Icons.pets,
+    'fitness_center': Icons.fitness_center,
+    'card_giftcard': Icons.card_giftcard,
+    'attach_money': Icons.attach_money,
+    'savings': Icons.savings,
+    'lightbulb': Icons.lightbulb,
+    'receipt': Icons.receipt,
+    'build': Icons.build,
+    'flight': Icons.flight,
+  };
 
   @override
   void initState() {
@@ -67,11 +75,18 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   Future<void> _loadInitialData() async {
     final accountsData = await supabase.from('accounts').select('id, name');
+    final categoriesData = await supabase
+        .from('categories')
+        .select('id, name, icon, color');
     if (mounted) {
       setState(() {
         _userAccounts = (accountsData as List).cast<Map<String, dynamic>>();
+        _userCategories = (categoriesData as List).cast<Map<String, dynamic>>();
         if (!_isEditing && _userAccounts.length == 1) {
           _selectedAccountId = _userAccounts.first['id'];
+        }
+        if (_userCategories.isNotEmpty) {
+          _selectedCategory = _userCategories.first['name'];
         }
       });
     }
@@ -252,7 +267,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               ),
             const SizedBox(height: 24),
             DropdownButtonFormField<String>(
-              value: _selectedAccountId,
+              initialValue: _selectedAccountId,
               hint: const Text('Cuenta*'),
               items: accountItems,
               onChanged: (newValue) async {
@@ -261,7 +276,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) =>
-                          const MainLayoutPage(initialPageIndex: 3),
+                          const MainLayoutPage(initialPageIndex: 1),
                     ),
                   );
                   // Recarga las cuentas al volver
@@ -275,20 +290,56 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             ),
             const SizedBox(height: 24),
             DropdownButtonFormField<String>(
-              value: _selectedCategory,
-              items: _categories.toSet().toList().map((String category) {
-                return DropdownMenuItem<String>(
-                  value: category,
-                  child: Text(category),
-                );
-              }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _selectedCategory = newValue!;
-                  _onFormChanged();
-                });
+              initialValue: _selectedCategory,
+              items: [
+                DropdownMenuItem<String>(
+                  value: _addCategoryValue,
+                  child: const Row(
+                    children: [
+                      Icon(Icons.add, color: AppTheme.primaryColor),
+                      SizedBox(width: 12),
+                      Text(
+                        'Crear Nueva Categoría...',
+                        style: TextStyle(color: AppTheme.primaryColor),
+                      ),
+                    ],
+                  ),
+                ),
+                const DropdownMenuItem<String>(enabled: false, child: Divider()),
+                ..._userCategories.map((category) {
+                  return DropdownMenuItem<String>(
+                    value: category['name'],
+                    child: Row(
+                      children: [
+                        Icon(
+                          _iconMap[category['icon']] ?? Icons.category,
+                        color: Color(int.parse(category['color']?.substring(2) ?? 'FFFFFFFF', radix: 16)),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(category['name']),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+              onChanged: (newValue) async {
+                if (newValue == _addCategoryValue) {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AddCategoryPage(),
+                    ),
+                  );
+                  _loadInitialData();
+                } else {
+                  setState(() {
+                    _selectedCategory = newValue!;
+                    _onFormChanged();
+                  });
+                }
               },
               decoration: const InputDecoration(labelText: 'Categoría'),
+              menuMaxHeight: 350,
+              icon: const Icon(Icons.arrow_downward),
             ),
             const SizedBox(height: 32),
             _isLoading

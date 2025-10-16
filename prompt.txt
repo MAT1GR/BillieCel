@@ -1,88 +1,53 @@
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Another exception was thrown: Cannot hit test a render box that has never been laid out.
-Application finished.
+Transacciones y Tareas Recurrentes:
+
+Qué es: Permitir programar ingresos (sueldo) y gastos fijos (alquiler, Netflix) para que se registren solos cada mes. Lo mismo para tareas repetitivas.
+
+Por qué es importante: Es la función que más tiempo te ahorrará. Automatiza el registro de los movimientos más predecibles, haciendo que tus finanzas estén siempre al día sin esfuerzo.
+
+Personalización Completa de Categorías:
+
+Qué es: Crear una sección en "Ajustes" donde puedas añadir, renombrar y eliminar tus propias categorías de gastos e ingresos. Idealmente, podrías asignarles un ícono y color.
+
+Por qué es importante: Hará que la app se adapte 100% a tu vida. Actualmente, las categorías están fijas en el código, y personalizarlas es clave para que sientas la herramienta como tuya.
+
+Búsqueda y Filtros Avanzados:
+
+Qué es: Añadir una barra de búsqueda en la pantalla de transacciones para encontrar un movimiento por su descripción (ej: "café"). También, añadir un botón de filtro para ver transacciones por rango de fechas, por cuenta o por categoría.
+
+Por qué es importante: A medida que acumules transacciones, se volverá indispensable para encontrar información específica y analizar tus gastos de un período concreto.
+
+Mejoras de Experiencia y UI (Detalles a Pulir)
+Estas son mejoras más pequeñas pero que harían la aplicación mucho más cómoda y profesional.
+
+Mejorar el Gráfico de Torta (Resumen Financiero):
+
+Qué es: Añadir una leyenda debajo del gráfico que muestre el nombre y color de cada categoría con su total gastado. Actualmente, solo muestra porcentajes y puede ser confuso.
+
+Refinar el Formulario de "Añadir Fondos" en Metas:
+
+Qué es: Al añadir fondos a una meta de ahorro, el formulario debería incluir un selector para elegir de qué cuenta estás sacando el dinero.
+
+Por qué es importante: Esto crearía automáticamente la transacción de egreso correspondiente, manteniendo los saldos de tus cuentas siempre correctos.
+
+Funciones Avanzadas (A Futuro)
+Estas son funcionalidades más complejas que se podrían añadir una vez que la base de la app esté completamente sólida.
+
+Seguridad Adicional (PIN o Biometría):
+
+Qué es: Añadir una pantalla de bloqueo opcional que pida tu huella digital, rostro o un PIN para abrir la app.
+
+Por qué es importante: Aumenta drásticamente la privacidad de tu información financiera.
+
+Notificaciones Push:
+
+Qué es: Enviar notificaciones para avisarte de tareas por vencer o cuando se registre una transacción recurrente.
+
+Por qué es importante: Convierte la app en un asistente proactivo.
+
+Exportación de Datos:
+
+Qué es: Un botón para exportar tus transacciones a un archivo CSV (compatible con Excel o Google Sheets).
+
+Por qué es importante: Te da control total sobre tu información para hacer análisis más profundos o simplemente tener una copia de seguridad.
+
+Mi recomendación sería empezar por la Personalización de Categorías, ya que es una base fundamental para que los presupuestos y el análisis de gastos sean realmente efectivos.

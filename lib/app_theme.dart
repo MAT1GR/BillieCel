@@ -16,6 +16,8 @@ class AppTheme {
   static const Color textColor = Color(0xFF333333);
   static const Color subtextColor = Color(0xFF757575);
 
+  static final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
+
   // --- TEMA PRINCIPAL DE LA APP ---
   static ThemeData get theme {
     return ThemeData(
@@ -77,7 +79,7 @@ class AppTheme {
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Colors.white,
         selectedItemColor: primaryColor,
-        unselectedItemColor: Colors.grey,
+        unselectedItemColor: Color(0xFF9E9E9E),
         elevation: 10,
       ),
 
@@ -85,6 +87,76 @@ class AppTheme {
       cardTheme: CardThemeData(
         elevation: 2,
         color: cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+      ),
+    );
+  }
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      primaryColor: accentColor, // Usamos el accentColor como primario en modo oscuro
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      
+      appBarTheme: AppBarTheme(
+        backgroundColor: const Color(0xFF121212),
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: GoogleFonts.poppins(
+          color: const Color(0xFFFFFFFF),
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+        iconTheme: const IconThemeData(color: accentColor),
+      ),
+
+      textTheme: GoogleFonts.poppinsTextTheme().apply(
+        bodyColor: const Color(0xB3FFFFFF),
+        displayColor: const Color(0xFFFFFFFF),
+      ),
+
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: accentColor,
+          foregroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+      ),
+
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF1E1E1E),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: accentColor, width: 2),
+        ),
+      ),
+
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF1E1E1E),
+        selectedItemColor: accentColor,
+        unselectedItemColor: Color(0xFF757575),
+        elevation: 10,
+      ),
+
+      cardTheme: CardThemeData(
+        elevation: 4,
+        color: const Color(0xFF1E1E1E),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.0),
         ),

@@ -5,7 +5,6 @@ import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/pages/add_budget_page.dart';
 import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
-import 'package:supabase/src/supabase_query_builder.dart';
 
 class BudgetsPage extends StatefulWidget {
   const BudgetsPage({super.key});

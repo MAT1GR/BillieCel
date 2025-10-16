@@ -4,6 +4,7 @@ import 'package:mi_billetera_digital/pages/budgets_page.dart';
 import 'package:mi_billetera_digital/pages/savings_goals_page.dart';
 import 'package:mi_billetera_digital/pages/tasks_page.dart';
 import 'package:mi_billetera_digital/pages/accounts_page.dart';
+import 'package:mi_billetera_digital/pages/profile_page.dart';
 
 class MainLayoutPage extends StatefulWidget {
   final int initialPageIndex;
@@ -29,6 +30,7 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
     BudgetsPage(),
     SavingsGoalsPage(),
     TasksPage(),
+    ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -69,6 +71,11 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
             icon: Icon(Icons.checklist_outlined),
             activeIcon: Icon(Icons.checklist),
             label: 'Tareas',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
+            label: 'Ajustes',
           ),
         ],
         currentIndex: _selectedIndex,

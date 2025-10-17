@@ -6,7 +6,7 @@ import 'package:mi_billetera_digital/pages/account_detail_page.dart';
 import 'package:mi_billetera_digital/pages/add_account_page.dart';
 import 'package:mi_billetera_digital/widgets/account_logo_widget.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
-import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
+
 
 class AccountsPage extends StatefulWidget {
   const AccountsPage({super.key});
@@ -60,7 +60,7 @@ class _AccountsPageState extends State<AccountsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppBar(title: 'Mis Cuentas'),
+      
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _accountsStream,
         builder: (context, snapshot) {
@@ -110,7 +110,7 @@ class _AccountsPageState extends State<AccountsPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToAddAccount(),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -180,10 +180,10 @@ class _AccountsPageState extends State<AccountsPage> {
                     currencyFormat.format(
                       (account['balance'] as num).toDouble(),
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).primaryColor,
                     ),
                   ),
                 ],
@@ -206,7 +206,7 @@ class _AccountsPageState extends State<AccountsPage> {
         return Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.edit, color: AppTheme.primaryColor),
+              leading: Icon(Icons.edit, color: Theme.of(context).primaryColor),
               title: const Text('Editar Cuenta'),
               onTap: () {
                 Navigator.of(context).pop();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:mi_billetera_digital/pages/splash_page.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthGatePage extends StatefulWidget {
@@ -20,22 +21,25 @@ class _AuthGatePageState extends State<AuthGatePage> {
   Future<void> _authenticate() async {
     final prefs = await SharedPreferences.getInstance();
     final bool biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
+    final LocalAuthentication auth = LocalAuthentication();
+    final bool canCheckBiometrics = await auth.canCheckBiometrics;
 
-    if (biometricEnabled) {
-      final LocalAuthentication auth = LocalAuthentication();
+    if (biometricEnabled && canCheckBiometrics) {
       try {
         final bool didAuthenticate = await auth.authenticate(
           localizedReason: 'Por favor, autentícate para acceder a Billie',
-          options: const AuthenticationOptions(biometricOnly: true),
+          options: const AuthenticationOptions(biometricOnly: true, stickyAuth: true),
         );
         if (didAuthenticate) {
           _navigateToHome();
         } else {
-          // Handle case where authentication is cancelled
+          // If authentication is cancelled, exit the app.
+          SystemNavigator.pop();
         }
-      } catch (e) {
-        // Handle error
-        _navigateToHome(); // For now, navigate to home on error
+      } on PlatformException catch (e) {
+        // Handle errors, but still navigate home as a fallback
+        print('Biometric Error: ${e.message}');
+        _navigateToHome();
       }
     } else {
       _navigateToHome();

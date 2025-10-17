@@ -5,7 +5,7 @@ import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/pages/add_savings_goal_page.dart';
 import 'package:mi_billetera_digital/pages/add_funds_page.dart';
-import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
+
 
 class SavingsGoalsPage extends StatefulWidget {
   const SavingsGoalsPage({super.key});
@@ -34,9 +34,9 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
         return Wrap(
           children: [
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.add_circle_outline,
-                color: AppTheme.primaryColor,
+                color: Theme.of(context).primaryColor,
               ),
               title: const Text('Añadir Fondos'),
               onTap: () {
@@ -49,7 +49,7 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.edit, color: AppTheme.primaryColor),
+              leading: Icon(Icons.edit, color: Theme.of(context).primaryColor),
               title: const Text('Editar Meta'),
               onTap: () {
                 Navigator.of(context).pop();
@@ -120,7 +120,7 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppBar(title: 'Metas de Ahorro'),
+      
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _goalsStream,
         builder: (context, snapshot) {
@@ -162,7 +162,7 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
             ),
           );
         },
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -247,8 +247,8 @@ class SavingsGoalListItem extends StatelessWidget {
                     );
                   },
                   style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.primaryColor,
-                    backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                    foregroundColor: Theme.of(context).primaryColor,
+                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
                   ),
                 ),
               ),

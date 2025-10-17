@@ -14,19 +14,25 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
   String? _selectedCategory;
   bool _isLoading = false;
 
-  final List<String> _categories = [
-    'Comida',
-    'Transporte',
-    'Vivienda',
-    'Suscripciones',
-    'Ocio',
-    'Salud',
-    'Otros',
-    'Alimentación',
-    'Entretenimiento',
-    'Educación',
-    'Servicios',
-  ];
+  List<Map<String, dynamic>> _userCategories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    final categoriesData = await supabase
+        .from('categories')
+        .select('name, icon, color')
+        .eq('type', 'expense'); // Only expense categories for budgets
+    if (mounted) {
+      setState(() {
+        _userCategories = (categoriesData as List).cast<Map<String, dynamic>>();
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -46,6 +52,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
           'amount': double.parse(_amountController.text),
           'month': now.month,
           'year': now.year,
+          'user_id': supabase.auth.currentUser!.id,
         });
 
         if (mounted) {
@@ -77,6 +84,28 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
 
   @override
   Widget build(BuildContext context) {
+    // This is needed to map string icon names to IconData
+    final Map<String, IconData> iconMap = {
+      'category': Icons.category,
+      'fastfood': Icons.fastfood,
+      'directions_bus': Icons.directions_bus,
+      'hotel': Icons.hotel,
+      'healing': Icons.healing,
+      'theaters': Icons.theaters,
+      'shopping_cart': Icons.shopping_cart,
+      'home': Icons.home,
+      'school': Icons.school,
+      'pets': Icons.pets,
+      'fitness_center': Icons.fitness_center,
+      'card_giftcard': Icons.card_giftcard,
+      'attach_money': Icons.attach_money,
+      'savings': Icons.savings,
+      'lightbulb': Icons.lightbulb,
+      'receipt': Icons.receipt,
+      'build': Icons.build,
+      'flight': Icons.flight,
+    };
+
     return Scaffold(
       appBar: AppBar(title: const Text('Nuevo Presupuesto')),
       body: Form(
@@ -84,24 +113,36 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            DropdownButtonFormField<String>(
-              initialValue: _selectedCategory,
-              hint: const Text('Selecciona una categoría'),
-              items: _categories.toSet().toList().map((String category) {
-                return DropdownMenuItem<String>(
-                  value: category,
-                  child: Text(category),
-                );
-              }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _selectedCategory = newValue!;
-                });
-              },
-              decoration: const InputDecoration(labelText: 'Categoría'),
-              validator: (value) =>
-                  value == null ? 'Por favor, selecciona una categoría' : null,
-            ),
+            if (_userCategories.isEmpty)
+              const Center(child: CircularProgressIndicator())
+            else
+              DropdownButtonFormField<String>(
+                value: _selectedCategory,
+                hint: const Text('Selecciona una categoría'),
+                items: _userCategories.map((category) {
+                  return DropdownMenuItem<String>(
+                    value: category['name'],
+                    child: Row(
+                      children: [
+                        Icon(
+                          iconMap[category['icon']] ?? Icons.category,
+                          color: Color(int.parse(category['color']?.substring(2) ?? 'FFFFFFFF', radix: 16)),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(category['name']),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedCategory = newValue!;
+                  });
+                },
+                decoration: const InputDecoration(labelText: 'Categoría'),
+                validator: (value) =>
+                    value == null ? 'Por favor, selecciona una categoría' : null,
+              ),
             const SizedBox(height: 24),
             TextFormField(
               controller: _amountController,

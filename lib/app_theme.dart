@@ -15,6 +15,7 @@ class AppTheme {
   static const Color cardColor = Colors.white;
   static const Color textColor = Color(0xFF333333);
   static const Color subtextColor = Color(0xFF757575);
+  static const Color primaryColorDark = Color(0xFF4FC3F7); // Light Blue 300
 
   static final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -98,11 +99,11 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      primaryColor: accentColor, // Usamos el accentColor como primario en modo oscuro
-      scaffoldBackgroundColor: const Color(0xFF121212),
+      primaryColor: primaryColorDark,
+      scaffoldBackgroundColor: Colors.black, // Instagram-like black
       
       appBarTheme: AppBarTheme(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Colors.black, // Match scaffold
         elevation: 0,
         centerTitle: true,
         titleTextStyle: GoogleFonts.poppins(
@@ -110,7 +111,7 @@ class AppTheme {
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
-        iconTheme: const IconThemeData(color: accentColor),
+        iconTheme: const IconThemeData(color: primaryColorDark),
       ),
 
       textTheme: GoogleFonts.poppinsTextTheme().apply(
@@ -120,8 +121,8 @@ class AppTheme {
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: accentColor,
-          foregroundColor: Colors.black,
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -132,7 +133,7 @@ class AppTheme {
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF1E1E1E),
+        fillColor: const Color(0xFF1A1A1A), // Darker grey
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 12,
@@ -143,20 +144,20 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: accentColor, width: 2),
+          borderSide: const BorderSide(color: primaryColorDark, width: 2),
         ),
       ),
 
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF1E1E1E),
-        selectedItemColor: accentColor,
+        backgroundColor: Color(0xFF1A1A1A), // Darker grey
+        selectedItemColor: primaryColorDark,
         unselectedItemColor: Color(0xFF757575),
         elevation: 10,
       ),
 
       cardTheme: CardThemeData(
-        elevation: 4,
-        color: const Color(0xFF1E1E1E),
+        elevation: 0, // Flat design like Instagram
+        color: const Color(0xFF1A1A1A), // Darker grey
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.0),
         ),

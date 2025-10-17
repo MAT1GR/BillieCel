@@ -27,7 +27,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _loadBiometricPreference() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _biometricEnabled = prefs.getBool('biometric_enabled') ?? true;
+      _biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
     });
   }
 
@@ -57,18 +57,18 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.email_outlined,
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).primaryColor,
                     ),
                     title: const Text('Email'),
                     subtitle: Text(userEmail),
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.lock_outline,
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).primaryColor,
                     ),
                     title: const Text('Cambiar Contraseña'),
                     trailing: const Icon(Icons.arrow_forward_ios),
@@ -82,9 +82,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.category_outlined,
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).primaryColor,
                     ),
                     title: const Text('Gestionar Categorías'),
                     trailing: const Icon(Icons.arrow_forward_ios),
@@ -98,9 +98,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.brightness_6_outlined,
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).primaryColor,
                     ),
                     title: const Text('Modo Oscuro'),
                     trailing: Switch(
@@ -125,9 +125,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       });
                       _saveBiometricPreference(value);
                     },
-                    secondary: const Icon(
+                    secondary: Icon(
                       Icons.fingerprint,
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).primaryColor,
                     ),
                   ),
                 ],

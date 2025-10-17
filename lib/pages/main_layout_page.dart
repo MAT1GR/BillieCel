@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:mi_billetera_digital/pages/transactions_page.dart';
-import 'package:mi_billetera_digital/pages/budgets_page.dart';
-import 'package:mi_billetera_digital/pages/savings_goals_page.dart';
-import 'package:mi_billetera_digital/pages/tasks_page.dart';
-import 'package:mi_billetera_digital/pages/accounts_page.dart';
+import 'package:mi_billetera_digital/pages/finances_page.dart';
 import 'package:mi_billetera_digital/pages/profile_page.dart';
+import 'package:mi_billetera_digital/pages/tasks_page.dart';
+import 'package:mi_billetera_digital/pages/analysis_page.dart';
+import 'package:mi_billetera_digital/pages/transactions_page.dart';
 
 class MainLayoutPage extends StatefulWidget {
   final int initialPageIndex;
@@ -26,9 +25,8 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
   // --- LISTA DE PÁGINAS REORDENADA ---
   static const List<Widget> _widgetOptions = <Widget>[
     TransactionsPage(),
-    AccountsPage(),
-    BudgetsPage(),
-    SavingsGoalsPage(),
+    FinancesPage(),
+    AnalysisPage(),
     TasksPage(),
     ProfilePage(),
   ];
@@ -48,24 +46,19 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
         // --- LISTA DE ÍTEMS REORDENADA ---
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Inicio',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet_outlined),
             activeIcon: Icon(Icons.account_balance_wallet),
-            label: 'Resumen', // Cambiado para mayor claridad
+            label: 'Finanzas',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.credit_card_outlined),
-            activeIcon: Icon(Icons.credit_card),
-            label: 'Cuentas',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.pie_chart_outline),
-            activeIcon: Icon(Icons.pie_chart),
-            label: 'Presupuestos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.star_border_outlined),
-            activeIcon: Icon(Icons.star),
-            label: 'Metas',
+            icon: Icon(Icons.bar_chart_outlined),
+            activeIcon: Icon(Icons.bar_chart),
+            label: 'Análisis',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.checklist_outlined),
@@ -73,9 +66,9 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
             label: 'Tareas',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Ajustes',
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Perfil',
           ),
         ],
         currentIndex: _selectedIndex,

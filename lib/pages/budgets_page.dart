@@ -4,7 +4,6 @@ import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/pages/add_budget_page.dart';
-import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
 
 class BudgetsPage extends StatefulWidget {
   const BudgetsPage({super.key});
@@ -16,31 +15,40 @@ class BudgetsPage extends StatefulWidget {
 class _BudgetsPageState extends State<BudgetsPage> {
   final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$ ');
   late final Stream<List<Map<String, dynamic>>> _budgetsStream;
+  Map<String, Map<String, dynamic>> _categoryDetails = {};
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _budgetsStream = supabase.from('budgets').stream(primaryKey: ['id']).map((
-      listOfBudgets,
-    ) {
+    _budgetsStream = supabase.from('budgets').stream(primaryKey: ['id']).map((listOfBudgets) {
       return listOfBudgets
-          .where(
-            (budget) =>
-                budget['month'] == now.month && budget['year'] == now.year,
-          )
+          .where((budget) => budget['month'] == now.month && budget['year'] == now.year)
           .toList();
     });
+    _loadCategoryDetails();
+  }
+
+  Future<void> _loadCategoryDetails() async {
+    final categoriesData = await supabase.from('categories').select('name, icon, color');
+    final Map<String, Map<String, dynamic>> details = {};
+    for (var cat in (categoriesData as List)) {
+      details[cat['name']] = cat;
+    }
+    if (mounted) {
+      setState(() {
+        _categoryDetails = details;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppBar(title: 'Presupuestos del Mes'),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _budgetsStream,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting || _categoryDetails.isEmpty) {
             return const LoadingShimmer();
           }
           if (snapshot.hasError) {
@@ -66,12 +74,14 @@ class _BudgetsPageState extends State<BudgetsPage> {
             itemCount: budgets.length,
             itemBuilder: (context, index) {
               final budget = budgets[index];
+              final categoryDetail = _categoryDetails[budget['category']];
               return FutureBuilder<double>(
                 future: _getSpentAmount(budget['category']),
                 builder: (context, spentSnapshot) {
                   final spentAmount = spentSnapshot.data ?? 0.0;
                   return BudgetListItem(
                     budget: budget,
+                    categoryDetail: categoryDetail,
                     spentAmount: spentAmount,
                     currencyFormat: currencyFormat,
                     onLongPress: () => _showBudgetOptions(context, budget),
@@ -90,7 +100,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
             ),
           );
         },
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: Theme.of(context).primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -120,7 +130,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
         return Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.edit, color: AppTheme.primaryColor),
+              leading: Icon(Icons.edit, color: Theme.of(context).primaryColor),
               title: const Text('Editar Presupuesto'),
               onTap: () {
                 Navigator.of(context).pop();
@@ -191,6 +201,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
 
 class BudgetListItem extends StatelessWidget {
   final Map<String, dynamic> budget;
+  final Map<String, dynamic>? categoryDetail;
   final double spentAmount;
   final NumberFormat currencyFormat;
   final VoidCallback onLongPress;
@@ -198,6 +209,7 @@ class BudgetListItem extends StatelessWidget {
   const BudgetListItem({
     super.key,
     required this.budget,
+    this.categoryDetail,
     required this.spentAmount,
     required this.currencyFormat,
     required this.onLongPress,
@@ -212,7 +224,31 @@ class BudgetListItem extends StatelessWidget {
     final remainingAmount = budgetAmount - spentAmount;
     final progressColor = progress > 0.85
         ? Colors.redAccent
-        : (progress > 0.6 ? Colors.orangeAccent : AppTheme.primaryColor);
+        : (progress > 0.6 ? Colors.orangeAccent : Theme.of(context).primaryColor);
+        
+    final Map<String, IconData> iconMap = {
+      'category': Icons.category,
+      'fastfood': Icons.fastfood,
+      'directions_bus': Icons.directions_bus,
+      'hotel': Icons.hotel,
+      'healing': Icons.healing,
+      'theaters': Icons.theaters,
+      'shopping_cart': Icons.shopping_cart,
+      'home': Icons.home,
+      'school': Icons.school,
+      'pets': Icons.pets,
+      'fitness_center': Icons.fitness_center,
+      'card_giftcard': Icons.card_giftcard,
+      'attach_money': Icons.attach_money,
+      'savings': Icons.savings,
+      'lightbulb': Icons.lightbulb,
+      'receipt': Icons.receipt,
+      'build': Icons.build,
+      'flight': Icons.flight,
+    };
+
+    final iconData = iconMap[categoryDetail?['icon']] ?? Icons.category;
+    final iconColor = Color(int.parse(categoryDetail?['color']?.substring(2) ?? 'FFFFFFFF', radix: 16));
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -224,12 +260,18 @@ class BudgetListItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                budget['category'],
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                children: [
+                  Icon(iconData, color: iconColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    budget['category'],
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               Row(

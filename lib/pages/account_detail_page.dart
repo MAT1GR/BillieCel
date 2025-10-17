@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart'; // <-- ESTA ES LA LÍNEA CORREGIDA
-import 'package:mi_billetera_digital/pages/transactions_page.dart'; // Reutilizaremos el TransactionListItem
+import 'package:mi_billetera_digital/widgets/transaction_list_item.dart';
 
 class AccountDetailPage extends StatelessWidget {
   final Map<String, dynamic> account;

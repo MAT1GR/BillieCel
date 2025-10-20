@@ -117,7 +117,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
               const Center(child: CircularProgressIndicator())
             else
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 hint: const Text('Selecciona una categoría'),
                 items: _userCategories.map((category) {
                   return DropdownMenuItem<String>(

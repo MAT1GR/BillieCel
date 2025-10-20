@@ -4,22 +4,42 @@ import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart'; // <-- ESTA ES LA LÍNEA CORREGIDA
 import 'package:mi_billetera_digital/widgets/transaction_list_item.dart';
 
-class AccountDetailPage extends StatelessWidget {
+import 'package:mi_billetera_digital/pages/add_transaction_page.dart';
+
+class AccountDetailPage extends StatefulWidget {
   final Map<String, dynamic> account;
 
   const AccountDetailPage({super.key, required this.account});
 
   @override
+  State<AccountDetailPage> createState() => _AccountDetailPageState();
+}
+
+class _AccountDetailPageState extends State<AccountDetailPage> {
+  late final Stream<List<Map<String, dynamic>>> _transactionsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    dynamic query = supabase.from('transactions').stream(primaryKey: ['id']);
+    query = query.eq('account_id', widget.account['id']);
+    _transactionsStream = query.order('date', ascending: false);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(account['name'])),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _getTransactionsForAccount(account['id']),
+      appBar: AppBar(title: Text(widget.account['name'])),
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _transactionsStream,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const LoadingShimmer();
           }
-          final transactions = snapshot.data!;
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          final transactions = snapshot.data ?? [];
 
           if (transactions.isEmpty) {
             return const Center(
@@ -37,10 +57,7 @@ class AccountDetailPage extends StatelessWidget {
               final transaction = transactions[index];
               return TransactionListItem(
                 transaction: transaction,
-                onLongPress: () {
-                  // Opcional: Aquí podrías añadir la lógica para editar/eliminar
-                  // desde esta pantalla también, si lo deseas en el futuro.
-                },
+                onLongPress: () => _showTransactionOptions(context, transaction),
               );
             },
           );
@@ -49,14 +66,79 @@ class AccountDetailPage extends StatelessWidget {
     );
   }
 
-  Future<List<Map<String, dynamic>>> _getTransactionsForAccount(
-    String accountId,
-  ) async {
-    final response = await supabase
-        .from('transactions')
-        .select()
-        .eq('account_id', accountId)
-        .order('date', ascending: false);
-    return (response as List).cast<Map<String, dynamic>>();
+  void _showTransactionOptions(
+      BuildContext context, Map<String, dynamic> transaction) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Wrap(
+          children: [
+            ListTile(
+              leading: Icon(Icons.edit, color: Theme.of(context).primaryColor),
+              title: const Text('Editar'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        AddTransactionPage(transaction: transaction),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.redAccent),
+              title: const Text('Eliminar',
+                  style: TextStyle(color: Colors.redAccent)),
+              onTap: () {
+                Navigator.of(context).pop();
+                _deleteTransaction(context, transaction);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteTransaction(
+      BuildContext context, Map<String, dynamic> transaction) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content:
+            const Text('¿Seguro que quieres eliminar esta transacción?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Eliminar',
+                style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      try {
+        await supabase
+            .from('transactions')
+            .delete()
+            .match({'id': transaction['id']});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Transacción eliminada')));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error al eliminar: $e')));
+        }
+      }
+    }
   }
 }

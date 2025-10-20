@@ -1,11 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'dart:async';
 import 'package:mi_billetera_digital/main.dart';
-import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/financial_summary_card.dart';
-import 'package:mi_billetera_digital/widgets/monthly_evolution_view.dart';
-import 'package:mi_billetera_digital/widgets/category_analysis_view.dart';
 import 'package:mi_billetera_digital/widgets/transaction_list_item.dart';
 import 'package:mi_billetera_digital/pages/add_transaction_page.dart';
 
@@ -22,18 +19,27 @@ class _AnalysisPageState extends State<AnalysisPage> {
   StreamSubscription? _transactionsSubscription;
   StreamSubscription? _accountsSubscription;
 
-  final _summaryNotifier = ValueNotifier<FinancialSummaryData>(FinancialSummaryData());
+  final _summaryNotifier = ValueNotifier<FinancialSummaryData>(
+    FinancialSummaryData(),
+  );
   final _transactionsNotifier = ValueNotifier<List<Map<String, dynamic>>>([]);
-  final _filteredTransactionsNotifier = ValueNotifier<List<Map<String, dynamic>>>([]);
+  final _filteredTransactionsNotifier =
+      ValueNotifier<List<Map<String, dynamic>>>([]);
   final _accountsNotifier = ValueNotifier<List<Map<String, dynamic>>>([]);
 
   SummaryViewType _viewType = SummaryViewType.monthly;
-  DateTime _selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  DateTime _selectedDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
 
   @override
   void initState() {
     super.initState();
-    final transactionsStream = supabase.from('transactions').stream(primaryKey: ['id']);
+    final transactionsStream = supabase
+        .from('transactions')
+        .stream(primaryKey: ['id']);
     final accountsStream = supabase.from('accounts').stream(primaryKey: ['id']);
 
     _transactionsSubscription = transactionsStream.listen((transactions) {
@@ -67,22 +73,29 @@ class _AnalysisPageState extends State<AnalysisPage> {
     if (_viewType == SummaryViewType.monthly) {
       filteredTransactions = allTransactions.where((t) {
         final transactionDate = DateTime.parse(t['date']);
-        return transactionDate.year == _selectedDate.year && transactionDate.month == _selectedDate.month;
+        return transactionDate.year == _selectedDate.year &&
+            transactionDate.month == _selectedDate.month;
       }).toList();
     } else if (_viewType == SummaryViewType.weekly) {
-      final startOfWeek = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+      final startOfWeek = _selectedDate.subtract(
+        Duration(days: _selectedDate.weekday - 1),
+      );
       final endOfWeek = startOfWeek.add(const Duration(days: 7));
       filteredTransactions = allTransactions.where((t) {
         final transactionDate = DateTime.parse(t['date']);
-        return transactionDate.isAfter(startOfWeek.subtract(const Duration(microseconds: 1))) && transactionDate.isBefore(endOfWeek);
+        return transactionDate.isAfter(
+              startOfWeek.subtract(const Duration(microseconds: 1)),
+            ) &&
+            transactionDate.isBefore(endOfWeek);
       }).toList();
-    } else { // Yearly
+    } else {
+      // Yearly
       filteredTransactions = allTransactions.where((t) {
         final transactionDate = DateTime.parse(t['date']);
         return transactionDate.year == _selectedDate.year;
       }).toList();
     }
-    
+
     _filteredTransactionsNotifier.value = filteredTransactions;
 
     double totalIngresos = 0;
@@ -96,7 +109,8 @@ class _AnalysisPageState extends State<AnalysisPage> {
       } else {
         totalEgresos += amount;
         final category = t['category'] as String;
-        expenseByCategory[category] = (expenseByCategory[category] ?? 0) + amount;
+        expenseByCategory[category] =
+            (expenseByCategory[category] ?? 0) + amount;
       }
     }
 
@@ -128,11 +142,20 @@ class _AnalysisPageState extends State<AnalysisPage> {
   void _changeDate(int increment) {
     setState(() {
       if (_viewType == SummaryViewType.monthly) {
-        _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + increment, 1);
+        _selectedDate = DateTime(
+          _selectedDate.year,
+          _selectedDate.month + increment,
+          1,
+        );
       } else if (_viewType == SummaryViewType.weekly) {
         _selectedDate = _selectedDate.add(Duration(days: 7 * increment));
-      } else { // Yearly
-        _selectedDate = DateTime(_selectedDate.year + increment, _selectedDate.month, _selectedDate.day);
+      } else {
+        // Yearly
+        _selectedDate = DateTime(
+          _selectedDate.year + increment,
+          _selectedDate.month,
+          _selectedDate.day,
+        );
       }
       _recalculateSummary();
     });
@@ -141,12 +164,19 @@ class _AnalysisPageState extends State<AnalysisPage> {
   void _toggleView(SummaryViewType newViewType) {
     setState(() {
       _viewType = newViewType;
-      _selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+      _selectedDate = DateTime(
+        DateTime.now().year,
+        DateTime.now().month,
+        DateTime.now().day,
+      );
       _recalculateSummary();
     });
   }
-  
-  Future<void> _showOptions(BuildContext context, Map<String, dynamic> transaction) async {
+
+  Future<void> _showOptions(
+    BuildContext context,
+    Map<String, dynamic> transaction,
+  ) async {
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -159,14 +189,18 @@ class _AnalysisPageState extends State<AnalysisPage> {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => AddTransactionPage(transaction: transaction),
+                    builder: (context) =>
+                        AddTransactionPage(transaction: transaction),
                   ),
                 );
               },
             ),
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.redAccent),
-              title: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
+              title: const Text(
+                'Eliminar',
+                style: TextStyle(color: Colors.redAccent),
+              ),
               onTap: () {
                 Navigator.of(context).pop();
                 _deleteTransaction(context, transaction);
@@ -178,12 +212,17 @@ class _AnalysisPageState extends State<AnalysisPage> {
     );
   }
 
-  Future<void> _deleteTransaction(BuildContext context, Map<String, dynamic> transaction) async {
+  Future<void> _deleteTransaction(
+    BuildContext context,
+    Map<String, dynamic> transaction,
+  ) async {
     final bool? confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirmar eliminación'),
-        content: const Text('¿Estás seguro de que quieres eliminar esta transacción?'),
+        content: const Text(
+          '¿Estás seguro de que quieres eliminar esta transacción?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -200,8 +239,12 @@ class _AnalysisPageState extends State<AnalysisPage> {
 
     if (confirm == true && mounted) {
       try {
-        await supabase.from('transactions').delete().match({'id': transaction['id']});
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Transacción eliminada')));
+        await supabase.from('transactions').delete().match({
+          'id': transaction['id'],
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Transacción eliminada')));
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -217,45 +260,17 @@ class _AnalysisPageState extends State<AnalysisPage> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Análisis'),
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(text: 'Resumen'),
-              Tab(text: 'Por Categoría'),
-              Tab(text: 'Evolución Mensual'),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            MonthlySummaryView(
-              summaryNotifier: _summaryNotifier,
-              filteredTransactionsNotifier: _filteredTransactionsNotifier,
-              selectedDate: _selectedDate,
-              viewType: _viewType,
-              onDateChange: _changeDate,
-              onViewChange: _toggleView,
-              onTransactionLongPress: (transaction) => _showOptions(context, transaction),
-            ),
-            ValueListenableBuilder<List<Map<String, dynamic>>>(
-              valueListenable: _transactionsNotifier,
-              builder: (context, transactions, _) {
-                return CategoryAnalysisView(transactions: transactions);
-              },
-            ),
-            ValueListenableBuilder<List<Map<String, dynamic>>>(
-              valueListenable: _transactionsNotifier,
-              builder: (context, transactions, _) {
-                return MonthlyEvolutionView(transactions: transactions);
-              },
-            ),
-          ],
-        ),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Análisis')),
+      body: MonthlySummaryView(
+        summaryNotifier: _summaryNotifier,
+        filteredTransactionsNotifier: _filteredTransactionsNotifier,
+        selectedDate: _selectedDate,
+        viewType: _viewType,
+        onDateChange: _changeDate,
+        onViewChange: _toggleView,
+        onTransactionLongPress: (transaction) =>
+            _showOptions(context, transaction),
       ),
     );
   }
@@ -283,15 +298,24 @@ class MonthlySummaryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$ ');
-    
+    final currencyFormat = NumberFormat.currency(
+      locale: 'es_AR',
+      symbol: '\$ ',
+    );
+
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
         SegmentedButton<SummaryViewType>(
           segments: const [
-            ButtonSegment(value: SummaryViewType.monthly, label: Text('Mensual')),
-            ButtonSegment(value: SummaryViewType.weekly, label: Text('Semanal')),
+            ButtonSegment(
+              value: SummaryViewType.monthly,
+              label: Text('Mensual'),
+            ),
+            ButtonSegment(
+              value: SummaryViewType.weekly,
+              label: Text('Semanal'),
+            ),
             ButtonSegment(value: SummaryViewType.yearly, label: Text('Anual')),
           ],
           selected: {viewType},
@@ -315,7 +339,10 @@ class MonthlySummaryView extends StatelessWidget {
           ),
         ),
         const Divider(height: 32),
-        Text('Movimientos del Periodo', style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          'Movimientos del Periodo',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         const SizedBox(height: 8),
         ValueListenableBuilder<List<Map<String, dynamic>>>(
           valueListenable: filteredTransactionsNotifier,
@@ -353,13 +380,20 @@ class MonthlySummaryView extends StatelessWidget {
 
     if (viewType == SummaryViewType.monthly) {
       dateText = DateFormat.yMMMM('es_AR').format(selectedDate);
-      isFuture = selectedDate.year == now.year && selectedDate.month == now.month;
+      isFuture =
+          selectedDate.year == now.year && selectedDate.month == now.month;
     } else if (viewType == SummaryViewType.weekly) {
-      final startOfWeek = selectedDate.subtract(Duration(days: selectedDate.weekday - 1));
+      final startOfWeek = selectedDate.subtract(
+        Duration(days: selectedDate.weekday - 1),
+      );
       final endOfWeek = startOfWeek.add(const Duration(days: 6));
-      dateText = '${DateFormat.d('es_AR').format(startOfWeek)} - ${DateFormat.yMMMd('es_AR').format(endOfWeek)}';
-      isFuture = now.isAfter(startOfWeek) && now.isBefore(endOfWeek.add(const Duration(days: 1)));
-    } else { // Yearly
+      dateText =
+          '${DateFormat.d('es_AR').format(startOfWeek)} - ${DateFormat.yMMMd('es_AR').format(endOfWeek)}';
+      isFuture =
+          now.isAfter(startOfWeek) &&
+          now.isBefore(endOfWeek.add(const Duration(days: 1)));
+    } else {
+      // Yearly
       dateText = DateFormat.y('es_AR').format(selectedDate);
       isFuture = selectedDate.year == now.year;
     }
@@ -387,7 +421,6 @@ class MonthlySummaryView extends StatelessWidget {
     );
   }
 }
-
 
 class FinancialSummaryData {
   final double totalIngresos;

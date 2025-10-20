@@ -4,6 +4,8 @@ import 'package:mi_billetera_digital/pages/splash_page.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+
+
 class AuthGatePage extends StatefulWidget {
   const AuthGatePage({super.key});
 
@@ -28,7 +30,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
       try {
         final bool didAuthenticate = await auth.authenticate(
           localizedReason: 'Por favor, autentícate para acceder a Billie',
-          options: const AuthenticationOptions(biometricOnly: true, stickyAuth: true),
+          options: const AuthenticationOptions(biometricOnly: false, stickyAuth: true),
         );
         if (didAuthenticate) {
           _navigateToHome();

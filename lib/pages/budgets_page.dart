@@ -5,6 +5,8 @@ import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/pages/add_budget_page.dart';
 
+import 'package:rxdart/rxdart.dart';
+
 class BudgetsPage extends StatefulWidget {
   const BudgetsPage({super.key});
 
@@ -15,6 +17,7 @@ class BudgetsPage extends StatefulWidget {
 class _BudgetsPageState extends State<BudgetsPage> {
   final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$ ');
   late final Stream<List<Map<String, dynamic>>> _budgetsStream;
+  late final Stream<List<Map<String, dynamic>>> _transactionsStream;
   Map<String, Map<String, dynamic>> _categoryDetails = {};
 
   @override
@@ -26,6 +29,12 @@ class _BudgetsPageState extends State<BudgetsPage> {
           .where((budget) => budget['month'] == now.month && budget['year'] == now.year)
           .toList();
     });
+
+    dynamic query = supabase.from('transactions').stream(primaryKey: ['id']);
+    query = query.eq('type', 'expense');
+    query = query.gte('date', DateTime(now.year, now.month, 1).toIso8601String());
+    _transactionsStream = query.lte('date', DateTime(now.year, now.month + 1, 0).toIso8601String());
+
     _loadCategoryDetails();
   }
 
@@ -45,8 +54,11 @@ class _BudgetsPageState extends State<BudgetsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: StreamBuilder<List<Map<String, dynamic>>>(
-        stream: _budgetsStream,
+      body: StreamBuilder<List<dynamic>>(
+        stream: CombineLatestStream.list([
+          _budgetsStream,
+          _transactionsStream,
+        ]),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting || _categoryDetails.isEmpty) {
             return const LoadingShimmer();
@@ -54,7 +66,8 @@ class _BudgetsPageState extends State<BudgetsPage> {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
-          final budgets = snapshot.data ?? [];
+          final budgets = (snapshot.data?[0] as List<Map<String, dynamic>>?) ?? [];
+          final transactions = (snapshot.data?[1] as List<Map<String, dynamic>>?) ?? [];
 
           if (budgets.isEmpty) {
             return const Center(
@@ -69,24 +82,27 @@ class _BudgetsPageState extends State<BudgetsPage> {
             );
           }
 
+          final spentByCategory = <String, double>{};
+          for (var transaction in transactions) {
+            final category = transaction['category'] as String;
+            final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+            spentByCategory[category] = (spentByCategory[category] ?? 0) + amount;
+          }
+
           return ListView.builder(
             padding: const EdgeInsets.all(16.0),
             itemCount: budgets.length,
             itemBuilder: (context, index) {
               final budget = budgets[index];
               final categoryDetail = _categoryDetails[budget['category']];
-              return FutureBuilder<double>(
-                future: _getSpentAmount(budget['category']),
-                builder: (context, spentSnapshot) {
-                  final spentAmount = spentSnapshot.data ?? 0.0;
-                  return BudgetListItem(
-                    budget: budget,
-                    categoryDetail: categoryDetail,
-                    spentAmount: spentAmount,
-                    currencyFormat: currencyFormat,
-                    onLongPress: () => _showBudgetOptions(context, budget),
-                  );
-                },
+              final spentAmount = spentByCategory[budget['category']] ?? 0.0;
+
+              return BudgetListItem(
+                budget: budget,
+                categoryDetail: categoryDetail,
+                spentAmount: spentAmount,
+                currencyFormat: currencyFormat,
+                onLongPress: () => _showBudgetOptions(context, budget),
               );
             },
           );
@@ -104,23 +120,6 @@ class _BudgetsPageState extends State<BudgetsPage> {
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
-  }
-
-  Future<double> _getSpentAmount(String category) async {
-    final now = DateTime.now();
-    final firstDayOfMonth = DateTime(now.year, now.month, 1).toIso8601String();
-    final response = await supabase
-        .from('transactions')
-        .select('amount')
-        .eq('type', 'expense')
-        .eq('category', category)
-        .gte('date', firstDayOfMonth);
-
-    double total = 0.0;
-    for (var trans in (response as List)) {
-      total += (trans['amount'] as num?)?.toDouble() ?? 0.0;
-    }
-    return total;
   }
 
   void _showBudgetOptions(BuildContext context, Map<String, dynamic> budget) {

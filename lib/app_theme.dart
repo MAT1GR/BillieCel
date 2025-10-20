@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 class AppTheme {
   // --- PALETA DE COLORES ---
   static const Color primaryColor = Color(
@@ -18,6 +20,13 @@ class AppTheme {
   static const Color primaryColorDark = Color(0xFF4FC3F7); // Light Blue 300
 
   static final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
+
+  static Future<void> setThemeMode(ThemeMode mode) async {
+    themeNotifier.value = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('themeMode', mode.name);
+  }
+
 
   // --- TEMA PRINCIPAL DE LA APP ---
   static ThemeData get theme {

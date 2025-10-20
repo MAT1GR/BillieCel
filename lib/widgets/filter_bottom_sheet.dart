@@ -105,7 +105,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
         }
         final accounts = snapshot.data!;
         return DropdownButtonFormField<String>(
-          value: _selectedAccountId,
+          initialValue: _selectedAccountId,
           hint: const Text('Todas las cuentas'),
           isExpanded: true,
           onChanged: (value) {
@@ -133,7 +133,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
         }
         final categories = snapshot.data!;
         return DropdownButtonFormField<String>(
-          value: _selectedCategory,
+          initialValue: _selectedCategory,
           hint: const Text('Todas las categorías'),
           isExpanded: true,
           onChanged: (value) {

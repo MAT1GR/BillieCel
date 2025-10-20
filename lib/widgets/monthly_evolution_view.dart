@@ -88,7 +88,7 @@ class _MonthlyEvolutionViewState extends State<MonthlyEvolutionView> {
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
                   final month = sortedMonths[value.toInt()];
-                  return Text(DateFormat.MMM('es_AR').format(DateTime.parse('${month}-01')));
+                  return Text(DateFormat.MMM('es_AR').format(DateTime.parse('$month-01')));
                 },
                 reservedSize: 30,
               ),

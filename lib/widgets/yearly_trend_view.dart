@@ -98,7 +98,7 @@ class _YearlyTrendViewState extends State<YearlyTrendView> {
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
                   final monthKey = sortedMonths[value.toInt()];
-                  return Text(DateFormat.MMM('es_AR').format(DateTime.parse('${monthKey}-01')));
+                  return Text(DateFormat.MMM('es_AR').format(DateTime.parse('$monthKey-01')));
                 },
                 reservedSize: 30,
               ),

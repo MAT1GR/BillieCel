@@ -17,23 +17,30 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   late bool isDarkMode;
   bool _biometricEnabled = true;
+  String _selectedCurrency = 'ARS';
 
   @override
   void initState() {
     super.initState();
-    _loadBiometricPreference();
+    _loadPreferences();
   }
 
-  Future<void> _loadBiometricPreference() async {
+  Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
+      _selectedCurrency = prefs.getString('currency') ?? 'ARS';
     });
   }
 
   Future<void> _saveBiometricPreference(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('biometric_enabled', value);
+  }
+
+  Future<void> _saveCurrencyPreference(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('currency', value);
   }
 
   @override
@@ -47,29 +54,24 @@ class _ProfilePageState extends State<ProfilePage> {
     final userEmail = supabase.auth.currentUser?.email ?? 'No disponible';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mi Perfil')),
+      appBar: AppBar(title: const Text('Ajustes')),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          _buildSectionTitle('Cuenta'),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
                   ListTile(
-                    leading: Icon(
-                      Icons.email_outlined,
-                      color: Theme.of(context).primaryColor,
-                    ),
+                    leading: Icon(Icons.email_outlined, color: Theme.of(context).primaryColor),
                     title: const Text('Email'),
                     subtitle: Text(userEmail),
                   ),
                   const Divider(),
                   ListTile(
-                    leading: Icon(
-                      Icons.lock_outline,
-                      color: Theme.of(context).primaryColor,
-                    ),
+                    leading: Icon(Icons.lock_outline, color: Theme.of(context).primaryColor),
                     title: const Text('Cambiar Contraseña'),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () {
@@ -82,10 +84,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: Icon(
-                      Icons.category_outlined,
-                      color: Theme.of(context).primaryColor,
-                    ),
+                    leading: Icon(Icons.category_outlined, color: Theme.of(context).primaryColor),
                     title: const Text('Gestionar Categorías'),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () {
@@ -96,28 +95,63 @@ class _ProfilePageState extends State<ProfilePage> {
                       );
                     },
                   ),
-                  const Divider(),
+                ],
+              ),
+            ),
+          ),
+          _buildSectionTitle('Apariencia'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
                   ListTile(
-                    leading: Icon(
-                      Icons.brightness_6_outlined,
-                      color: Theme.of(context).primaryColor,
-                    ),
+                    leading: Icon(Icons.brightness_6_outlined, color: Theme.of(context).primaryColor),
                     title: const Text('Modo Oscuro'),
                     trailing: Switch(
                       value: isDarkMode,
                       onChanged: (value) {
                         setState(() {
                           isDarkMode = value;
-                          AppTheme.themeNotifier.value =
-                              isDarkMode ? ThemeMode.dark : ThemeMode.light;
+                          AppTheme.setThemeMode(
+                              isDarkMode ? ThemeMode.dark : ThemeMode.light);
                         });
                       },
                     ),
                   ),
                   const Divider(),
+                  ListTile(
+                    leading: Icon(Icons.attach_money, color: Theme.of(context).primaryColor),
+                    title: const Text('Moneda'),
+                    subtitle: Text(_selectedCurrency),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () => _showCurrencyPicker(),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: Icon(Icons.language, color: Theme.of(context).primaryColor),
+                    title: const Text('Idioma'),
+                    subtitle: const Text('Español'),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Esta función estará disponible próximamente')),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _buildSectionTitle('Seguridad'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
                   SwitchListTile(
-                    title: const Text('Seguridad Biométrica'),
-                    subtitle: const Text('Proteger la app con huella o rostro'),
+                    title: const Text('Seguridad del Dispositivo'),
+                    subtitle: const Text('Proteger la app con huella, rostro o PIN'),
                     value: _biometricEnabled,
                     onChanged: (value) {
                       setState(() {
@@ -125,10 +159,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       });
                       _saveBiometricPreference(value);
                     },
-                    secondary: Icon(
-                      Icons.fingerprint,
-                      color: Theme.of(context).primaryColor,
-                    ),
+                    secondary: Icon(Icons.fingerprint, color: Theme.of(context).primaryColor),
                   ),
                 ],
               ),
@@ -148,12 +179,58 @@ class _ProfilePageState extends State<ProfilePage> {
             icon: const Icon(Icons.logout),
             label: const Text('Cerrar Sesión'),
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  Colors.redAccent, // Un color distintivo para la acción
+              backgroundColor: Colors.redAccent,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 24, 8, 8),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).primaryColor,
+        ),
+      ),
+    );
+  }
+
+  void _showCurrencyPicker() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Seleccionar Moneda'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _currencyTile('ARS', 'Peso Argentino'),
+              _currencyTile('USD', 'Dólar Estadounidense'),
+              _currencyTile('EUR', 'Euro'),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _currencyTile(String code, String name) {
+    return ListTile(
+      title: Text(name),
+      trailing: Text(code, style: const TextStyle(color: Colors.grey)),
+      onTap: () {
+        setState(() {
+          _selectedCurrency = code;
+        });
+        _saveCurrencyPreference(code);
+        Navigator.of(context).pop();
+      },
     );
   }
 }

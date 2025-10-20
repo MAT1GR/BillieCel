@@ -6,7 +6,6 @@ import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/pages/add_transaction_page.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
-import 'package:mi_billetera_digital/pages/transaction_detail_page.dart';
 import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
 import 'package:mi_billetera_digital/widgets/financial_summary_card.dart';
 import 'package:mi_billetera_digital/pages/analysis_page.dart';
@@ -178,14 +177,80 @@ class _TransactionsPageState extends State<TransactionsPage> {
     BuildContext context,
     Map<String, dynamic> transaction,
   ) async {
-    // ... (implementation is correct)
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Wrap(
+          children: [
+            ListTile(
+              leading: Icon(Icons.edit, color: Theme.of(context).primaryColor),
+              title: const Text('Editar'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        AddTransactionPage(transaction: transaction),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.redAccent),
+              title: const Text('Eliminar',
+                  style: TextStyle(color: Colors.redAccent)),
+              onTap: () {
+                Navigator.of(context).pop();
+                _deleteTransaction(context, transaction);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _deleteTransaction(
     BuildContext context,
     Map<String, dynamic> transaction,
   ) async {
-    // ... (implementation is correct)
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content:
+            const Text('¿Seguro que quieres eliminar esta transacción?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Eliminar',
+                style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      try {
+        await supabase
+            .from('transactions')
+            .delete()
+            .match({'id': transaction['id']});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Transacción eliminada')));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error al eliminar: $e')));
+        }
+      }
+    }
   }
 
   @override

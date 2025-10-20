@@ -39,7 +39,7 @@ class _AddFundsPageState extends State<AddFundsPage> {
 
   Future<void> _loadInitialData() async {
 
-    final accountsData = await supabase.from('accounts').select('id, name');
+    final accountsData = await supabase.from('accounts').select('id, name, balance');
 
     if (mounted) {
 
@@ -115,7 +115,15 @@ class _AddFundsPageState extends State<AddFundsPage> {
 
 
 
-        // 2. Update the savings goal
+        // 2. Update source account balance
+        final sourceAccount = _userAccounts.firstWhere((acc) => acc['id'] == _selectedAccountId);
+        final newBalance = (sourceAccount['balance'] as num) - amount;
+        await supabase
+            .from('accounts')
+            .update({'balance': newBalance})
+            .match({'id': _selectedAccountId!});
+
+        // 3. Update the savings goal
 
         await supabase
 
@@ -241,7 +249,7 @@ class _AddFundsPageState extends State<AddFundsPage> {
 
               DropdownButtonFormField<String>(
 
-                value: _selectedAccountId,
+                initialValue: _selectedAccountId,
 
                 hint: const Text('Cuenta de Origen*'),
 

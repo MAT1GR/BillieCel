@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/pages/finances_page.dart';
 import 'package:mi_billetera_digital/pages/profile_page.dart';
-import 'package:mi_billetera_digital/pages/tasks_page.dart';
 import 'package:mi_billetera_digital/pages/analysis_page.dart';
 import 'package:mi_billetera_digital/pages/transactions_page.dart';
+import 'package:mi_billetera_digital/pages/debts_page.dart';
+import 'package:mi_billetera_digital/pages/calculator_page.dart';
 
 class MainLayoutPage extends StatefulWidget {
   final int initialPageIndex;
@@ -26,8 +27,9 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
   static const List<Widget> _widgetOptions = <Widget>[
     TransactionsPage(),
     FinancesPage(),
+    DebtsPage(),
     AnalysisPage(),
-    TasksPage(),
+    CalculatorPage(),
     ProfilePage(),
   ];
 
@@ -56,19 +58,24 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
             label: 'Finanzas',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.request_quote_outlined),
+            activeIcon: Icon(Icons.request_quote),
+            label: 'Deudas',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart_outlined),
             activeIcon: Icon(Icons.bar_chart),
             label: 'Análisis',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.checklist_outlined),
-            activeIcon: Icon(Icons.checklist),
-            label: 'Tareas',
+            icon: Icon(Icons.calculate_outlined),
+            activeIcon: Icon(Icons.calculate),
+            label: 'Calculadora',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Perfil',
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
+            label: 'Ajustes',
           ),
         ],
         currentIndex: _selectedIndex,

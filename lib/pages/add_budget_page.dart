@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
+import 'package:mi_billetera_digital/utils/currency_input_formatter.dart';
 
 class AddBudgetPage extends StatefulWidget {
   const AddBudgetPage({super.key, required Map<String, dynamic> budget});
@@ -49,7 +50,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
         final now = DateTime.now();
         await supabase.from('budgets').insert({
           'category': _selectedCategory,
-          'amount': double.parse(_amountController.text),
+          'amount': double.parse(_amountController.text.replaceAll('.', '')),
           'month': now.month,
           'year': now.year,
           'user_id': supabase.auth.currentUser!.id,
@@ -153,11 +154,12 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
+              inputFormatters: [CurrencyInputFormatter()],
               validator: (value) {
                 if (value == null ||
                     value.isEmpty ||
-                    double.tryParse(value) == null ||
-                    double.parse(value) <= 0) {
+                    double.tryParse(value.replaceAll('.', '')) == null ||
+                    double.parse(value.replaceAll('.', '')) <= 0) {
                   return 'Por favor, ingresa un monto válido y mayor a cero';
                 }
                 return null;

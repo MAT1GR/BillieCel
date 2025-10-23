@@ -7,7 +7,6 @@ import 'package:mi_billetera_digital/pages/add_account_page.dart';
 import 'package:mi_billetera_digital/widgets/account_logo_widget.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 
-
 class AccountsPage extends StatefulWidget {
   const AccountsPage({super.key});
 
@@ -60,7 +59,6 @@ class _AccountsPageState extends State<AccountsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _accountsStream,
         builder: (context, snapshot) {
@@ -146,7 +144,10 @@ class _AccountsPageState extends State<AccountsPage> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  AccountLogoWidget(accountName: account['name']),
+                  AccountLogoWidget(
+                    accountName: account['name'],
+                    iconPath: null,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -188,7 +189,6 @@ class _AccountsPageState extends State<AccountsPage> {
                   ),
                 ],
               ),
-              
             ],
           ),
         ),
@@ -282,11 +282,7 @@ class _AccountsPageState extends State<AccountsPage> {
 
   void _navigateToAddAccount({Map<String, dynamic>? account}) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => AddAccountPage(account: account),
-      ),
+      MaterialPageRoute(builder: (context) => AddAccountPage(account: account)),
     );
   }
 }
-
-

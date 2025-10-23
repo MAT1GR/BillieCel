@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
-import 'package:mi_billetera_digital/pages/categories_page.dart';
 import 'package:mi_billetera_digital/pages/change_password_page.dart';
+import 'package:mi_billetera_digital/pages/recurring_transactions_page.dart';
 import 'package:mi_billetera_digital/pages/login_page.dart';
+import 'package:mi_billetera_digital/pages/couple_settings_page.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,11 +20,18 @@ class _ProfilePageState extends State<ProfilePage> {
   late bool isDarkMode;
   bool _biometricEnabled = true;
   String _selectedCurrency = 'ARS';
+  String? _currentUsername;
+  final _usernameController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadPreferences();
+    @override
+    void dispose() {
+      _usernameController.dispose();
+      super.dispose();
+    }
   }
 
   Future<void> _loadPreferences() async {
@@ -41,6 +50,91 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _saveCurrencyPreference(String value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('currency', value);
+  }
+
+  Future<void> _loadUserProfile() async {
+    final userId = supabase.auth.currentUser!.id;
+    final response = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', userId)
+        .maybeSingle();
+
+    if (response != null) {
+      setState(() {
+        _currentUsername = response['username'];
+        _usernameController.text = _currentUsername ?? '';
+      });
+    }
+  }
+
+  Future<void> _saveUsername() async {
+    final newUsername = _usernameController.text.trim();
+    if (newUsername.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('El nombre de usuario no puede estar vacío.'),
+        ),
+      );
+      return;
+    }
+
+    final userId = supabase.auth.currentUser!.id;
+    try {
+      // Check if profile exists
+      final existingProfile = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (existingProfile == null) {
+        // Insert new profile
+        await supabase.from('profiles').insert({
+          'id': userId,
+          'username': newUsername,
+        });
+      } else {
+        // Update existing profile
+        await supabase
+            .from('profiles')
+            .update({'username': newUsername})
+            .eq('id', userId);
+      }
+
+      setState(() {
+        _currentUsername = newUsername;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nombre de usuario actualizado con éxito!'),
+          ),
+        );
+        Navigator.of(context).pop(); // Close dialog or navigate back
+      }
+    } on PostgrestException catch (e) {
+      if (e.code == '23505') {
+        // Unique constraint violation
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ese nombre de usuario ya está en uso.'),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error al actualizar nombre de usuario: ${e.message}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error inesperado: ${e.toString()}')),
+      );
+    }
   }
 
   @override
@@ -65,13 +159,56 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 children: [
                   ListTile(
-                    leading: Icon(Icons.email_outlined, color: Theme.of(context).primaryColor),
+                    leading: Icon(
+                      Icons.email_outlined,
+                      color: Theme.of(context).primaryColor,
+                    ),
                     title: const Text('Email'),
                     subtitle: Text(userEmail),
                   ),
                   const Divider(),
                   ListTile(
-                    leading: Icon(Icons.lock_outline, color: Theme.of(context).primaryColor),
+                    leading: Icon(
+                      Icons.person_outline,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    title: const Text('Nombre de Usuario'),
+                    subtitle: Text(_currentUsername ?? 'No establecido'),
+                    trailing: const Icon(Icons.edit),
+                    onTap: () {
+                      _usernameController.text =
+                          _currentUsername ??
+                          ''; // Pre-fill with current username
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Editar Nombre de Usuario'),
+                          content: TextField(
+                            controller: _usernameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre de Usuario',
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Cancelar'),
+                            ),
+                            ElevatedButton(
+                              onPressed: _saveUsername,
+                              child: const Text('Guardar'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: Icon(
+                      Icons.lock_outline,
+                      color: Theme.of(context).primaryColor,
+                    ),
                     title: const Text('Cambiar Contraseña'),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () {
@@ -84,17 +221,37 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: Icon(Icons.category_outlined, color: Theme.of(context).primaryColor),
-                    title: const Text('Gestionar Categorías'),
-                    trailing: const Icon(Icons.arrow_forward_ios),
+                    leading: Icon(
+                      Icons.repeat,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    title: const Text('Transacciones Recurrentes'),
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => const CategoriesPage(),
+                          builder: (context) =>
+                              const RecurringTransactionsPage(),
                         ),
                       );
                     },
                   ),
+                  const Divider(),
+                  ListTile(
+                    leading: Icon(
+                      Icons.people_alt_outlined,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    title: const Text('Configuración de Pareja'),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const CoupleSettingsPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(),
                 ],
               ),
             ),
@@ -106,7 +263,10 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 children: [
                   ListTile(
-                    leading: Icon(Icons.brightness_6_outlined, color: Theme.of(context).primaryColor),
+                    leading: Icon(
+                      Icons.brightness_6_outlined,
+                      color: Theme.of(context).primaryColor,
+                    ),
                     title: const Text('Modo Oscuro'),
                     trailing: Switch(
                       value: isDarkMode,
@@ -114,14 +274,18 @@ class _ProfilePageState extends State<ProfilePage> {
                         setState(() {
                           isDarkMode = value;
                           AppTheme.setThemeMode(
-                              isDarkMode ? ThemeMode.dark : ThemeMode.light);
+                            isDarkMode ? ThemeMode.dark : ThemeMode.light,
+                          );
                         });
                       },
                     ),
                   ),
                   const Divider(),
                   ListTile(
-                    leading: Icon(Icons.attach_money, color: Theme.of(context).primaryColor),
+                    leading: Icon(
+                      Icons.attach_money,
+                      color: Theme.of(context).primaryColor,
+                    ),
                     title: const Text('Moneda'),
                     subtitle: Text(_selectedCurrency),
                     trailing: const Icon(Icons.arrow_forward_ios),
@@ -129,13 +293,20 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: Icon(Icons.language, color: Theme.of(context).primaryColor),
+                    leading: Icon(
+                      Icons.language,
+                      color: Theme.of(context).primaryColor,
+                    ),
                     title: const Text('Idioma'),
                     subtitle: const Text('Español'),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Esta función estará disponible próximamente')),
+                        const SnackBar(
+                          content: Text(
+                            'Esta función estará disponible próximamente',
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -151,7 +322,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   SwitchListTile(
                     title: const Text('Seguridad del Dispositivo'),
-                    subtitle: const Text('Proteger la app con huella, rostro o PIN'),
+                    subtitle: const Text(
+                      'Proteger la app con huella, rostro o PIN',
+                    ),
                     value: _biometricEnabled,
                     onChanged: (value) {
                       setState(() {
@@ -159,7 +332,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       });
                       _saveBiometricPreference(value);
                     },
-                    secondary: Icon(Icons.fingerprint, color: Theme.of(context).primaryColor),
+                    secondary: Icon(
+                      Icons.fingerprint,
+                      color: Theme.of(context).primaryColor,
+                    ),
                   ),
                 ],
               ),
@@ -178,9 +354,7 @@ class _ProfilePageState extends State<ProfilePage> {
             },
             icon: const Icon(Icons.logout),
             label: const Text('Cerrar Sesión'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
           ),
         ],
       ),

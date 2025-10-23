@@ -5,6 +5,7 @@ import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/account_logo_widget.dart';
 import 'package:mi_billetera_digital/pages/add_category_page.dart';
 import 'package:mi_billetera_digital/pages/main_layout_page.dart';
+import 'package:mi_billetera_digital/utils/currency_input_formatter.dart';
 
 class AddTransactionPage extends StatefulWidget {
   final Map<String, dynamic>? transaction;
@@ -113,7 +114,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Future<void> _checkBudgetStatus() async {
-    final amount = double.tryParse(_amountController.text);
+    final amount = double.tryParse(_amountController.text.replaceAll('.', ''));
     if (amount == null || amount <= 0) return;
     // ... rest of the function
   }
@@ -129,7 +130,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       try {
         final data = {
           'description': _descriptionController.text.trim(),
-          'amount': double.parse(_amountController.text),
+          'amount': double.parse(_amountController.text.replaceAll('.', '')),
           'type': _selectedType,
           'category': _selectedCategory,
           'date': DateTime.now().toIso8601String(),
@@ -177,7 +178,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           value: account['id'],
           child: Row(
             children: [
-              AccountLogoWidget(accountName: account['name'], size: 24),
+              AccountLogoWidget(accountName: account['name'], iconPath: account['icon'] ?? '', size: 24),
               const SizedBox(width: 12),
               Text(account['name']),
             ],
@@ -230,8 +231,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
+              inputFormatters: [CurrencyInputFormatter()],
               validator: (v) =>
-                  (v == null || v.isEmpty || double.tryParse(v) == null)
+                  (v == null || v.isEmpty || double.tryParse(v.replaceAll('.', '')) == null)
                   ? 'Ingresa un monto válido'
                   : null,
             ),

@@ -10,6 +10,7 @@ import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
 import 'package:mi_billetera_digital/widgets/financial_summary_card.dart';
 import 'package:mi_billetera_digital/pages/analysis_page.dart';
 import 'package:mi_billetera_digital/widgets/transaction_list_item.dart';
+import 'package:mi_billetera_digital/widgets/filter_bottom_sheet.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
@@ -165,6 +166,29 @@ class _TransactionsPageState extends State<TransactionsPage> {
     );
   }
 
+  void _showFilterBottomSheet() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => FilterBottomSheet(
+        initialAccountId: _selectedAccountId,
+        initialCategory: _selectedCategory,
+        initialStartDate: _startDate,
+        initialEndDate: _endDate,
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedAccountId = result['accountId'];
+        _selectedCategory = result['category'];
+        _startDate = result['startDate'];
+        _endDate = result['endDate'];
+        _resetAndBuildStreams();
+      });
+    }
+  }
+
   void _navigateToAddTransaction(String type) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -180,31 +204,36 @@ class _TransactionsPageState extends State<TransactionsPage> {
     showModalBottomSheet(
       context: context,
       builder: (context) {
-        return Wrap(
-          children: [
-            ListTile(
-              leading: Icon(Icons.edit, color: Theme.of(context).primaryColor),
-              title: const Text('Editar'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        AddTransactionPage(transaction: transaction),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.redAccent),
-              title: const Text('Eliminar',
-                  style: TextStyle(color: Colors.redAccent)),
-              onTap: () {
-                Navigator.of(context).pop();
-                _deleteTransaction(context, transaction);
-              },
-            ),
-          ],
+        return Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).padding.bottom,
+          ),
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: Icon(Icons.edit, color: Theme.of(context).primaryColor),
+                title: const Text('Editar'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          AddTransactionPage(transaction: transaction),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.redAccent),
+                title: const Text('Eliminar',
+                    style: TextStyle(color: Colors.redAccent)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _deleteTransaction(context, transaction);
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -265,13 +294,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
             child: ValueListenableBuilder<FinancialSummaryData>(
               valueListenable: _summaryNotifier,
               builder: (context, summary, _) => FinancialSummaryCard(
-                totalIngresos: currencyFormat.format(summary.totalIngresos),
-                totalEgresos: currencyFormat.format(summary.totalEgresos),
                 saldo: currencyFormat.format(summary.totalBalance),
                 cashBalance: currencyFormat.format(summary.cashBalance),
                 virtualBalance: currencyFormat.format(summary.virtualBalance),
                 expenseData: summary.expenseByCategory,
                 showPieChart: false,
+                showMonthlySummary: false, totalIngresos: '', totalEgresos: '',
               ),
             ),
           ),
@@ -301,9 +329,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.filter_list),
-                  onPressed: () {
-                    // TODO: Implement filter dialog
-                  },
+                  onPressed: _showFilterBottomSheet,
                 ),
               ],
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
+import 'package:mi_billetera_digital/utils/currency_input_formatter.dart';
 
 import 'package:mi_billetera_digital/widgets/account_logo_widget.dart';
 
@@ -37,12 +38,14 @@ class _PayDebtPageState extends State<PayDebtPage> {
 
   Future<void> _savePayment() async {
     if (_formKey.currentState!.validate()) {
-      final amount = double.parse(_amountController.text);
+      final amount = double.parse(_amountController.text.replaceAll('.', ''));
       final remainingAmount = (widget.debt['amount'] as num).abs();
 
       if (amount > remainingAmount) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('El monto no puede ser mayor a la deuda')),
+          const SnackBar(
+            content: Text('El monto no puede ser mayor a la deuda'),
+          ),
         );
         return;
       }
@@ -60,20 +63,21 @@ class _PayDebtPageState extends State<PayDebtPage> {
         });
 
         // 2. Update source account balance
-        final sourceAccount = _accounts.firstWhere((acc) => acc['id'] == _selectedAccountId);
+        final sourceAccount = _accounts.firstWhere(
+          (acc) => acc['id'] == _selectedAccountId,
+        );
         final newBalance = (sourceAccount['balance'] as num) - amount;
-        await supabase
-            .from('accounts')
-            .update({'balance': newBalance})
-            .match({'id': _selectedAccountId!});
+        await supabase.from('accounts').update({'balance': newBalance}).match({
+          'id': _selectedAccountId!,
+        });
 
         // 3. Update debt amount
         final newDebtAmount = widget.debt['amount'] + amount;
         final isPaid = newDebtAmount >= 0;
-        await supabase.from('debts').update({
-          'amount': newDebtAmount,
-          'is_paid': isPaid,
-        }).match({'id': widget.debt['id']});
+        await supabase
+            .from('debts')
+            .update({'amount': newDebtAmount, 'is_paid': isPaid})
+            .match({'id': widget.debt['id']});
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -94,9 +98,7 @@ class _PayDebtPageState extends State<PayDebtPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Realizar Pago'),
-      ),
+      appBar: AppBar(title: const Text('Realizar Pago')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -110,11 +112,12 @@ class _PayDebtPageState extends State<PayDebtPage> {
               controller: _amountController,
               decoration: const InputDecoration(labelText: 'Monto a pagar'),
               keyboardType: TextInputType.number,
+              inputFormatters: [CurrencyInputFormatter()],
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Por favor, ingresa un monto';
                 }
-                if (double.tryParse(value) == null) {
+                if (double.tryParse(value.replaceAll('.', '')) == null) {
                   return 'Por favor, ingresa un número válido';
                 }
                 return null;
@@ -129,7 +132,10 @@ class _PayDebtPageState extends State<PayDebtPage> {
                   value: account['id'] as String,
                   child: Row(
                     children: [
-                      AccountLogoWidget(accountName: account['name'] as String),
+                      AccountLogoWidget(
+                        accountName: account['name'] as String,
+                        iconPath: null,
+                      ),
                       const SizedBox(width: 10),
                       Text(account['name'] as String),
                     ],

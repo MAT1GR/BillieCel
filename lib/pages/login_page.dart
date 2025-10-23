@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/pages/main_layout_page.dart';
+import 'package:mi_billetera_digital/pages/register_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,6 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
 
   Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
@@ -53,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
       }
-    }
+      }
     if (mounted) {
       setState(() {
         _isLoading = false;
@@ -61,82 +64,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _signUp() async {
-    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      final authResponse = await supabase.auth.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-      if (authResponse.user != null) {
-        await _createDefaultAccounts(authResponse.user!.id);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('¡Registro exitoso! Ya puedes iniciar sesión.'),
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Error en el registro. Inténtalo de nuevo.'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
-      }
-    } on AuthException catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.message),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Ocurrió un error inesperado'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _createDefaultAccounts(String userId) async {
-    try {
-      await supabase.from('accounts').insert([
-        {
-          'name': 'Efectivo',
-          'balance': 0.0,
-          'user_id': userId,
-        },
-        {
-          'name': 'Transferencia',
-          'balance': 0.0,
-          'user_id': userId,
-        },
-      ]);
-    } catch (error) {
-      // It's better to log this error and not block the user.
-      // In a real app, you might want to have a more robust error handling mechanism.
-      print('Error creating default accounts: $error');
-    }
-  }
 
   @override
   void dispose() {
@@ -196,8 +124,20 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _passwordController,
-                    decoration: const InputDecoration(labelText: 'Contraseña'),
-                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Contraseña',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isPasswordVisible = !_isPasswordVisible;
+                          });
+                        },
+                      ),
+                    ),
+                    obscureText: !_isPasswordVisible,
                     validator: (value) {
                       if (value == null || value.isEmpty || value.length < 6) {
                         return 'La contraseña debe tener al menos 6 caracteres';
@@ -217,11 +157,18 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             const SizedBox(height: 12),
                             TextButton(
-                              onPressed: _signUp,
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const RegisterPage(),
+                                  ),
+                                );
+                              },
                               child: const Text(
                                 '¿No tienes cuenta? Regístrate',
                               ),
                             ),
+
                           ],
                         ),
                 ],

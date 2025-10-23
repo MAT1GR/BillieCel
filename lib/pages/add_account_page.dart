@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/widgets/account_logo_widget.dart';
@@ -77,9 +76,9 @@ class _AddAccountPageState extends State<AddAccountPage> {
         if (mounted) Navigator.of(context).pop();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al guardar: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error al guardar: $e')));
         }
       }
     }
@@ -91,10 +90,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
       appBar: AppBar(
         title: Text(isEditing ? 'Editar Cuenta' : 'Nueva Cuenta'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _saveAccount,
-          ),
+          IconButton(icon: const Icon(Icons.check), onPressed: _saveAccount),
         ],
       ),
       body: Center(
@@ -122,52 +118,53 @@ class _AddAccountPageState extends State<AddAccountPage> {
                     },
                     fieldViewBuilder:
                         (context, controller, focusNode, onFieldSubmitted) {
-                      if (controller.text != nameController.text) {
-                        controller.text = nameController.text;
-                        controller.selection = TextSelection.fromPosition(
-                          TextPosition(offset: controller.text.length),
-                        );
-                      }
-                      focusNode.addListener(() {
-                        if (focusNode.hasFocus &&
-                            controller.text.trim().isEmpty) {
-                          controller.text = ' ';
-                          controller.selection = TextSelection.collapsed(
-                            offset: controller.text.length,
-                          );
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            controller.text = '';
-                            controller.selection =
-                                const TextSelection.collapsed(offset: 0);
-                          });
-                        }
-                      });
-                      return TextFormField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre de la Cuenta',
-                        ),
-                        validator: (v) =>
-                            v == null || v.isEmpty ? 'Ingresa un nombre' : null,
-                        onChanged: (v) => nameController.text = v,
-                        onTap: () {
-                          if (controller.text.trim().isEmpty) {
-                            controller.text = ' ';
-                            controller.selection = TextSelection.collapsed(
-                              offset: controller.text.length,
+                          if (controller.text != nameController.text) {
+                            controller.text = nameController.text;
+                            controller.selection = TextSelection.fromPosition(
+                              TextPosition(offset: controller.text.length),
                             );
-                            WidgetsBinding.instance.addPostFrameCallback((
-                              _,
-                            ) {
-                              controller.text = '';
-                              controller.selection =
-                                  const TextSelection.collapsed(offset: 0);
-                            });
                           }
+                          focusNode.addListener(() {
+                            if (focusNode.hasFocus &&
+                                controller.text.trim().isEmpty) {
+                              controller.text = ' ';
+                              controller.selection = TextSelection.collapsed(
+                                offset: controller.text.length,
+                              );
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                controller.text = '';
+                                controller.selection =
+                                    const TextSelection.collapsed(offset: 0);
+                              });
+                            }
+                          });
+                          return TextFormField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre de la Cuenta',
+                            ),
+                            validator: (v) => v == null || v.isEmpty
+                                ? 'Ingresa un nombre'
+                                : null,
+                            onChanged: (v) => nameController.text = v,
+                            onTap: () {
+                              if (controller.text.trim().isEmpty) {
+                                controller.text = ' ';
+                                controller.selection = TextSelection.collapsed(
+                                  offset: controller.text.length,
+                                );
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  controller.text = '';
+                                  controller.selection =
+                                      const TextSelection.collapsed(offset: 0);
+                                });
+                              }
+                            },
+                          );
                         },
-                      );
-                    },
                     optionsViewBuilder: (context, onSelected, options) {
                       return Align(
                         alignment: Alignment.topLeft,
@@ -190,6 +187,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
                                       leading: AccountLogoWidget(
                                         accountName: option,
                                         size: 24,
+                                        iconPath: null,
                                       ),
                                       title: Text(option),
                                     ),
@@ -235,7 +233,9 @@ class _AddAccountPageState extends State<AddAccountPage> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _saveAccount,
-                      child: Text(isEditing ? 'Guardar Cambios' : 'Crear Cuenta'),
+                      child: Text(
+                        isEditing ? 'Guardar Cambios' : 'Crear Cuenta',
+                      ),
                     ),
                   ),
                 ],

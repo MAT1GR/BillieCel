@@ -41,7 +41,9 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
 
       if (amount > remainingAmount) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('El monto no puede ser mayor a la deuda')),
+          const SnackBar(
+            content: Text('El monto no puede ser mayor a la deuda'),
+          ),
         );
         return;
       }
@@ -59,20 +61,21 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
         });
 
         // 2. Update destination account balance
-        final destAccount = _accounts.firstWhere((acc) => acc['id'] == _selectedAccountId);
+        final destAccount = _accounts.firstWhere(
+          (acc) => acc['id'] == _selectedAccountId,
+        );
         final newBalance = (destAccount['balance'] as num) + amount;
-        await supabase
-            .from('accounts')
-            .update({'balance': newBalance})
-            .match({'id': _selectedAccountId!});
+        await supabase.from('accounts').update({'balance': newBalance}).match({
+          'id': _selectedAccountId!,
+        });
 
         // 3. Update debt amount
         final newDebtAmount = widget.debt['amount'] - amount;
         final isPaid = newDebtAmount <= 0;
-        await supabase.from('debts').update({
-          'amount': newDebtAmount,
-          'is_paid': isPaid,
-        }).match({'id': widget.debt['id']});
+        await supabase
+            .from('debts')
+            .update({'amount': newDebtAmount, 'is_paid': isPaid})
+            .match({'id': widget.debt['id']});
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -93,9 +96,7 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Registrar Pago Recibido'),
-      ),
+      appBar: AppBar(title: const Text('Registrar Pago Recibido')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -128,7 +129,10 @@ class _ReceivePaymentPageState extends State<ReceivePaymentPage> {
                   value: account['id'] as String,
                   child: Row(
                     children: [
-                      AccountLogoWidget(accountName: account['name'] as String),
+                      AccountLogoWidget(
+                        accountName: account['name'] as String,
+                        iconPath: null,
+                      ),
                       const SizedBox(width: 10),
                       Text(account['name'] as String),
                     ],

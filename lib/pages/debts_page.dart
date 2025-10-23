@@ -155,38 +155,43 @@ class _DebtsPageState extends State<DebtsPage> with SingleTickerProviderStateMix
     showModalBottomSheet(
       context: context,
       builder: (context) {
-        return Wrap(
-          children: [
-            if (isOwing)
+        return Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).padding.bottom,
+          ),
+          child: Wrap(
+            children: [
+              if (isOwing)
+                ListTile(
+                  leading: Icon(Icons.payment, color: Theme.of(context).primaryColor),
+                  title: const Text('Realizar Pago'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => PayDebtPage(debt: debt),
+                      ),
+                    );
+                  },
+                ),
               ListTile(
-                leading: Icon(Icons.payment, color: Theme.of(context).primaryColor),
-                title: const Text('Realizar Pago'),
+                leading: const Icon(Icons.check, color: Colors.green),
+                title: const Text('Marcar como Pagada'),
                 onTap: () {
                   Navigator.of(context).pop();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => PayDebtPage(debt: debt),
-                    ),
-                  );
+                  _markAsPaid(context, debt);
                 },
               ),
-            ListTile(
-              leading: const Icon(Icons.check, color: Colors.green),
-              title: const Text('Marcar como Pagada'),
-              onTap: () {
-                Navigator.of(context).pop();
-                _markAsPaid(context, debt);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.redAccent),
-              title: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
-              onTap: () {
-                Navigator.of(context).pop();
-                _deleteDebt(context, debt);
-              },
-            ),
-          ],
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.redAccent),
+                title: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _deleteDebt(context, debt);
+                },
+              ),
+            ],
+          ),
         );
       },
     );

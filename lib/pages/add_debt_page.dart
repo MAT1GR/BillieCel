@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
+import 'package:mi_billetera_digital/utils/currency_input_formatter.dart';
 
 enum DebtType { owed, owing }
 
@@ -30,7 +31,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
 
   Future<void> _saveDebt() async {
     if (_formKey.currentState!.validate()) {
-      final amount = double.parse(_amountController.text);
+      final amount = double.parse(_amountController.text.replaceAll('.', ''));
       final finalAmount = _debtType == DebtType.owed ? amount : -amount;
 
       try {
@@ -99,11 +100,12 @@ class _AddDebtPageState extends State<AddDebtPage> {
               controller: _amountController,
               decoration: const InputDecoration(labelText: 'Monto'),
               keyboardType: TextInputType.number,
+              inputFormatters: [CurrencyInputFormatter()],
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Por favor, ingresa un monto';
                 }
-                if (double.tryParse(value) == null) {
+                if (double.tryParse(value.replaceAll('.', '')) == null) {
                   return 'Por favor, ingresa un número válido';
                 }
                 return null;

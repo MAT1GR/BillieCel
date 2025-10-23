@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
+import 'package:mi_billetera_digital/utils/currency_input_formatter.dart';
 
 class AddFundsPage extends StatefulWidget {
   final Map<String, dynamic> goal;
@@ -87,7 +88,7 @@ class _AddFundsPageState extends State<AddFundsPage> {
 
       try {
 
-        final amount = double.parse(_amountController.text);
+        final amount = double.parse(_amountController.text.replaceAll('.', ''));
 
         final newCurrentAmount = (widget.goal['current_amount'] as num) + amount;
 
@@ -223,15 +224,17 @@ class _AddFundsPageState extends State<AddFundsPage> {
 
               autofocus: true,
 
+              inputFormatters: [CurrencyInputFormatter()],
+
               validator: (value) {
 
                 if (value == null ||
 
                     value.isEmpty ||
 
-                    double.tryParse(value) == null ||
+                    double.tryParse(value.replaceAll('.', '')) == null ||
 
-                    double.parse(value) <= 0) {
+                    double.parse(value.replaceAll('.', '')) <= 0) {
 
                   return 'Ingresa un monto válido y mayor a cero';
 

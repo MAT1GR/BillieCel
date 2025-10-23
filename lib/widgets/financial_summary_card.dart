@@ -7,6 +7,7 @@ class FinancialSummaryCard extends StatelessWidget {
   final String totalIngresos, totalEgresos, saldo, cashBalance, virtualBalance;
   final Map<String, double> expenseData;
   final bool showPieChart;
+  final bool showMonthlySummary;
 
   const FinancialSummaryCard({
     super.key,
@@ -17,6 +18,7 @@ class FinancialSummaryCard extends StatelessWidget {
     required this.virtualBalance,
     required this.expenseData,
     this.showPieChart = true, // Default to true
+    this.showMonthlySummary = true,
   });
 
   Color _getColorForCategory(String category) {
@@ -124,22 +126,24 @@ class FinancialSummaryCard extends StatelessWidget {
               const Divider(height: 30),
               _CategoryLegend(expenseData: expenseData, getColorForCategory: _getColorForCategory),
             ],
-            const Divider(height: 40),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildIncomeExpenseColumn(
-                  'Ingresos (Mes)',
-                  totalIngresos,
-                  AppTheme.accentColor,
-                ),
-                _buildIncomeExpenseColumn(
-                  'Egresos (Mes)',
-                  totalEgresos,
-                  Colors.redAccent,
-                ),
-              ],
-            ),
+            if (showMonthlySummary) ...[
+              const Divider(height: 40),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildIncomeExpenseColumn(
+                    'Ingresos (Mes)',
+                    totalIngresos,
+                    AppTheme.accentColor,
+                  ),
+                  _buildIncomeExpenseColumn(
+                    'Egresos (Mes)',
+                    totalEgresos,
+                    Colors.redAccent,
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

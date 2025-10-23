@@ -26,6 +26,7 @@ dependencies:
   local_auth_android: ^1.0.35
   local_auth_ios: ^1.0.10
   rxdart: ^0.27.7
+  google_sign_in: ^6.2.1
 
 dev_dependencies:
   flutter_test:

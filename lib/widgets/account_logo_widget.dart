@@ -9,7 +9,7 @@ class AccountLogoWidget extends StatelessWidget {
   const AccountLogoWidget({
     super.key,
     required this.accountName,
-    this.size = 30.0,
+    this.size = 30.0, required iconPath,
   });
 
   // Widget interno para manejar logos con padding

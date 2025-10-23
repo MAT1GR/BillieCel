@@ -42,14 +42,14 @@ class _CoupleSettingsPageState extends State<CoupleSettingsPage> {
             .from('profiles')
             .select('username')
             .eq('id', partnerId)
-            .single();
+            .maybeSingle();
 
         setState(() {
           _coupleId = response['id'];
           _currentCoupleStatus = response['status'];
           _coupleUser1Id = response['user1_id'];
           _coupleUser2Id = response['user2_id'];
-          _partnerUsername = partnerProfileResponse['username'];
+          _partnerUsername = partnerProfileResponse?['username'];
         });
         debugPrint('[_loadCoupleStatus] State updated: coupleId=$_coupleId, status=$_currentCoupleStatus, user1=$_coupleUser1Id, user2=$_coupleUser2Id, partnerUsername=$_partnerUsername');
       } else {
@@ -134,14 +134,27 @@ class _CoupleSettingsPageState extends State<CoupleSettingsPage> {
   }
 
   Future<void> _acceptInvitation() async {
-    if (_coupleId == null) return;
+    debugPrint('[CoupleSettingsPage] _acceptInvitation: Starting...');
+    if (_coupleId == null) {
+      debugPrint('[CoupleSettingsPage] _acceptInvitation: _coupleId is null, returning.');
+      return;
+    }
     try {
-      await supabase.from('couples').update({'status': 'active'}).eq('id', _coupleId!);
+      debugPrint('[CoupleSettingsPage] _acceptInvitation: Updating couple status to active for coupleId=$_coupleId');
+      await supabase.from('couples').update({'status': 'active'}).eq('id', _coupleId as String);
+      debugPrint('[CoupleSettingsPage] _acceptInvitation: Couple status updated.');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invitación aceptada!')),
       );
-      _loadCoupleStatus();
+      await _loadCoupleStatus(); // Reload status to update UI
+      debugPrint('[CoupleSettingsPage] _acceptInvitation: _loadCoupleStatus completed.');
+    } on PostgrestException catch (e) {
+      debugPrint('[CoupleSettingsPage] _acceptInvitation PostgrestException: ${e.message}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al aceptar invitación: ${e.message}')),
+      );
     } catch (e) {
+      debugPrint('[CoupleSettingsPage] _acceptInvitation Unexpected Error: ${e.toString()}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al aceptar invitación: ${e.toString()}')),
       );
@@ -151,7 +164,7 @@ class _CoupleSettingsPageState extends State<CoupleSettingsPage> {
   Future<void> _cancelOrDeclineInvitation() async {
     if (_coupleId == null) return;
     try {
-      await supabase.from('couples').delete().eq('id', _coupleId!);
+      await supabase.from('couples').delete().eq('id', _coupleId as String);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invitación rechazada.')),
       );
@@ -166,7 +179,7 @@ class _CoupleSettingsPageState extends State<CoupleSettingsPage> {
   Future<void> _leaveCouple() async {
     if (_coupleId == null) return;
     try {
-      await supabase.from('couples').delete().eq('id', _coupleId!);
+      await supabase.from('couples').delete().eq('id', _coupleId as String);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Has dejado la pareja.')),
       );

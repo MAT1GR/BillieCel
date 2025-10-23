@@ -53,23 +53,35 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadUserProfile() async {
+    debugPrint('[ProfilePage] _loadUserProfile: Starting...');
     final userId = supabase.auth.currentUser!.id;
+    debugPrint('[ProfilePage] _loadUserProfile: Current User ID: $userId');
     final response = await supabase
         .from('profiles')
         .select('username')
         .eq('id', userId)
         .maybeSingle();
 
+    debugPrint('[ProfilePage] _loadUserProfile: Supabase Response: $response');
+
     if (response != null) {
       setState(() {
         _currentUsername = response['username'];
         _usernameController.text = _currentUsername ?? '';
+      });
+      debugPrint('[ProfilePage] _loadUserProfile: State updated: _currentUsername=$_currentUsername');
+    } else {
+      debugPrint('[ProfilePage] _loadUserProfile: No profile found for user.');
+      setState(() {
+        _currentUsername = null;
+        _usernameController.text = '';
       });
     }
   }
 
   Future<void> _saveUsername() async {
     final newUsername = _usernameController.text.trim();
+    debugPrint('[ProfilePage] _saveUsername: newUsername=$newUsername');
     if (newUsername.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -89,18 +101,21 @@ class _ProfilePageState extends State<ProfilePage> {
           .maybeSingle();
 
       if (existingProfile == null) {
+        debugPrint('[ProfilePage] _saveUsername: Inserting new profile for userId=$userId');
         // Insert new profile
         await supabase.from('profiles').insert({
           'id': userId,
           'username': newUsername,
         });
       } else {
+        debugPrint('[ProfilePage] _saveUsername: Updating existing profile for userId=$userId');
         // Update existing profile
         await supabase
             .from('profiles')
             .update({'username': newUsername})
             .eq('id', userId);
       }
+      debugPrint('[ProfilePage] _saveUsername: Profile operation completed.');
 
       setState(() {
         _currentUsername = newUsername;
@@ -114,6 +129,7 @@ class _ProfilePageState extends State<ProfilePage> {
         Navigator.of(context).pop(); // Close dialog or navigate back
       }
     } on PostgrestException catch (e) {
+      debugPrint('[ProfilePage] _saveUsername PostgrestException: ${e.message}');
       if (e.code == '23505') {
         // Unique constraint violation
         ScaffoldMessenger.of(context).showSnackBar(
@@ -131,6 +147,7 @@ class _ProfilePageState extends State<ProfilePage> {
         );
       }
     } catch (e) {
+      debugPrint('[ProfilePage] _saveUsername Unexpected Error: ${e.toString()}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error inesperado: ${e.toString()}')),
       );

@@ -4,10 +4,15 @@ enum CoupleMode { personal, joint }
 
 class CoupleModeProvider with ChangeNotifier {
   CoupleMode _currentMode = CoupleMode.personal;
-  String? _activeCoupleId;
+  String? _coupleId;
+  String? _partnerId;
 
   CoupleMode get currentMode => _currentMode;
-  String? get activeCoupleId => _activeCoupleId;
+  String? get coupleId => _coupleId;
+  String? get partnerId => _partnerId;
+
+  bool get isCoupleActive => _coupleId != null && _partnerId != null;
+  bool get isJointMode => isCoupleActive && _currentMode == CoupleMode.joint;
 
   void setMode(CoupleMode mode) {
     if (_currentMode != mode) {
@@ -16,17 +21,14 @@ class CoupleModeProvider with ChangeNotifier {
     }
   }
 
-  void setActiveCouple(String? coupleId) {
-    if (_activeCoupleId != coupleId) {
-      _activeCoupleId = coupleId;
-      // If coupleId becomes null, revert to personal mode
-      if (coupleId == null) {
-        _currentMode = CoupleMode.personal;
-      }
-      notifyListeners();
+  void setCoupleData(String? coupleId, String? partnerId) {
+    _coupleId = coupleId;
+    _partnerId = partnerId;
+    // If couple data is cleared, always revert to personal mode
+    if (coupleId == null) {
+      _currentMode = CoupleMode.personal;
     }
+    notifyListeners();
+    debugPrint('[CoupleModeProvider] State Updated: coupleId=$_coupleId, partnerId=$_partnerId, mode=$_currentMode');
   }
-
-  // Helper to check if in joint mode
-  bool get isJointMode => _currentMode == CoupleMode.joint && _activeCoupleId != null;
 }

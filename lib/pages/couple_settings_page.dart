@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CoupleSettingsPage extends StatefulWidget {
@@ -26,6 +28,7 @@ class _CoupleSettingsPageState extends State<CoupleSettingsPage> {
   Future<void> _loadCoupleStatus() async {
     debugPrint('[_loadCoupleStatus] Starting...');
     final userId = supabase.auth.currentUser!.id;
+    final coupleModeProvider = context.read<CoupleModeProvider>();
     debugPrint('[_loadCoupleStatus] Current User ID: $userId');
     try {
       final response = await supabase
@@ -36,13 +39,15 @@ class _CoupleSettingsPageState extends State<CoupleSettingsPage> {
 
       debugPrint('[_loadCoupleStatus] Supabase Response: $response');
 
-      if (response != null) {
+      if (response != null && response['status'] == 'active') {
         final partnerId = response['user1_id'] == userId ? response['user2_id'] : response['user1_id'];
         final partnerProfileResponse = await supabase
             .from('profiles')
             .select('username')
             .eq('id', partnerId)
             .maybeSingle();
+        
+        coupleModeProvider.setCoupleData(response['id'], partnerId);
 
         setState(() {
           _coupleId = response['id'];
@@ -53,7 +58,8 @@ class _CoupleSettingsPageState extends State<CoupleSettingsPage> {
         });
         debugPrint('[_loadCoupleStatus] State updated: coupleId=$_coupleId, status=$_currentCoupleStatus, user1=$_coupleUser1Id, user2=$_coupleUser2Id, partnerUsername=$_partnerUsername');
       } else {
-        debugPrint('[_loadCoupleStatus] No couple found for user.');
+        debugPrint('[_loadCoupleStatus] No active couple found for user.');
+        coupleModeProvider.setCoupleData(null, null);
         setState(() {
           _currentCoupleStatus = null;
           _partnerUsername = null;
@@ -64,6 +70,7 @@ class _CoupleSettingsPageState extends State<CoupleSettingsPage> {
       }
     } catch (e) {
       debugPrint('[_loadCoupleStatus] Error loading couple status: $e');
+      coupleModeProvider.setCoupleData(null, null);
       setState(() {
         _currentCoupleStatus = null;
         _partnerUsername = null;
@@ -146,7 +153,7 @@ class _CoupleSettingsPageState extends State<CoupleSettingsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invitación aceptada!')),
       );
-      await _loadCoupleStatus(); // Reload status to update UI
+      await _loadCoupleStatus(); // Reload status to update UI and provider
       debugPrint('[CoupleSettingsPage] _acceptInvitation: _loadCoupleStatus completed.');
     } on PostgrestException catch (e) {
       debugPrint('[CoupleSettingsPage] _acceptInvitation PostgrestException: ${e.message}');
@@ -168,7 +175,7 @@ class _CoupleSettingsPageState extends State<CoupleSettingsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invitación rechazada.')),
       );
-      _loadCoupleStatus();
+      _loadCoupleStatus(); // Reload status to update UI and provider
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al rechazar invitación: ${e.toString()}')),
@@ -183,7 +190,7 @@ class _CoupleSettingsPageState extends State<CoupleSettingsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Has dejado la pareja.')),
       );
-      _loadCoupleStatus();
+      _loadCoupleStatus(); // Reload status to update UI and provider
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al dejar la pareja: ${e.toString()}')),

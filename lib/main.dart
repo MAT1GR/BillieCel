@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/pages/auth_gate_page.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart'; // <-- 1. Importa esta librería
 
@@ -26,7 +28,12 @@ void main() async {
     AppTheme.themeNotifier.value = ThemeMode.light;
   }
 
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => CoupleModeProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 final supabase = Supabase.instance.client;

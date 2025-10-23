@@ -4,11 +4,14 @@ import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/pages/account_detail_page.dart';
 import 'package:mi_billetera_digital/pages/add_account_page.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
 import 'package:mi_billetera_digital/widgets/account_logo_widget.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
+import 'package:provider/provider.dart';
 
 class AccountsPage extends StatefulWidget {
-  const AccountsPage({super.key});
+  final CoupleMode mode;
+  const AccountsPage({super.key, this.mode = CoupleMode.personal});
 
   @override
   State<AccountsPage> createState() => _AccountsPageState();
@@ -16,18 +19,33 @@ class AccountsPage extends StatefulWidget {
 
 class _AccountsPageState extends State<AccountsPage> {
   final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$ ');
-  late final Stream<List<Map<String, dynamic>>> _accountsStream;
+  late Stream<List<Map<String, dynamic>>> _accountsStream;
 
   static const _defaultAccounts = ['Efectivo', 'Transferencia'];
 
   @override
   void initState() {
     super.initState();
+    _setupStream();
+    if (widget.mode == CoupleMode.personal) {
+      _ensureDefaultAccounts();
+    }
+  }
+
+  void _setupStream() {
+    final userId = supabase.auth.currentUser!.id;
+    final coupleModeProvider = context.read<CoupleModeProvider>();
+
+    List<String> userIds = [userId];
+    if (widget.mode == CoupleMode.joint && coupleModeProvider.isCoupleActive) {
+      userIds.add(coupleModeProvider.partnerId!);
+    }
+
     _accountsStream = supabase
         .from('accounts')
         .stream(primaryKey: ['id'])
+        .inFilter('user_id', userIds)
         .order('name');
-    _ensureDefaultAccounts();
   }
 
   Future<void> _ensureDefaultAccounts() async {
@@ -106,11 +124,13 @@ class _AccountsPageState extends State<AccountsPage> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToAddAccount(),
-        backgroundColor: Theme.of(context).primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      floatingActionButton: widget.mode == CoupleMode.personal
+          ? FloatingActionButton(
+              onPressed: () => _navigateToAddAccount(),
+              backgroundColor: Theme.of(context).primaryColor,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
     );
   }
 
@@ -121,6 +141,7 @@ class _AccountsPageState extends State<AccountsPage> {
     final nameLower = (account['name'] as String).toLowerCase();
     final isDefault = nameLower == 'efectivo' || nameLower == 'transferencia';
     final holder = (account['holder_full_name'] as String?);
+    final isOwnAccount = account['user_id'] == supabase.auth.currentUser!.id;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -134,9 +155,11 @@ class _AccountsPageState extends State<AccountsPage> {
             ),
           );
         },
-        onLongPress: () {
-          _showAccountOptions(context, account);
-        },
+        onLongPress: isOwnAccount && widget.mode == CoupleMode.personal
+            ? () {
+                _showAccountOptions(context, account);
+              }
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(14.0),
           child: Column(

@@ -2,28 +2,43 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/pages/add_savings_goal_page.dart';
 import 'package:mi_billetera_digital/pages/add_funds_page.dart';
-
+import 'package:provider/provider.dart';
 
 class SavingsGoalsPage extends StatefulWidget {
-  const SavingsGoalsPage({super.key});
+  final CoupleMode mode;
+  const SavingsGoalsPage({super.key, this.mode = CoupleMode.personal});
 
   @override
   State<SavingsGoalsPage> createState() => _SavingsGoalsPageState();
 }
 
 class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
-  late final Stream<List<Map<String, dynamic>>> _goalsStream;
+  late Stream<List<Map<String, dynamic>>> _goalsStream;
   final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$ ');
 
   @override
   void initState() {
     super.initState();
+    _setupStream();
+  }
+
+  void _setupStream() {
+    final userId = supabase.auth.currentUser!.id;
+    final coupleModeProvider = context.read<CoupleModeProvider>();
+
+    List<String> userIds = [userId];
+    if (widget.mode == CoupleMode.joint && coupleModeProvider.isCoupleActive) {
+      userIds.add(coupleModeProvider.partnerId!);
+    }
+
     _goalsStream = supabase
         .from('savings_goals')
         .stream(primaryKey: ['id'])
+        .inFilter('user_id', userIds)
         .order('created_at', ascending: false);
   }
 
@@ -145,26 +160,32 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
             itemCount: goals.length,
             itemBuilder: (context, index) {
               final goal = goals[index];
+              final isOwnGoal = goal['user_id'] == supabase.auth.currentUser!.id;
               return SavingsGoalListItem(
                 goal: goal,
                 currencyFormat: currencyFormat,
-                onLongPress: () => _showGoalOptions(context, goal),
+                onLongPress: isOwnGoal && widget.mode == CoupleMode.personal
+                    ? () => _showGoalOptions(context, goal)
+                    : null,
+                showAddFundsButton: isOwnGoal,
               );
             },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const AddSavingsGoalPage(goal: {}),
-            ),
-          );
-        },
-        backgroundColor: Theme.of(context).primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      floatingActionButton: widget.mode == CoupleMode.personal
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const AddSavingsGoalPage(goal: {}),
+                  ),
+                );
+              },
+              backgroundColor: Theme.of(context).primaryColor,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
     );
   }
 }
@@ -172,13 +193,15 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
 class SavingsGoalListItem extends StatelessWidget {
   final Map<String, dynamic> goal;
   final NumberFormat currencyFormat;
-  final VoidCallback onLongPress;
+  final VoidCallback? onLongPress;
+  final bool showAddFundsButton;
 
   const SavingsGoalListItem({
     super.key,
     required this.goal,
     required this.currencyFormat,
     required this.onLongPress,
+    this.showAddFundsButton = true,
   });
 
   @override
@@ -233,25 +256,27 @@ class SavingsGoalListItem extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.add_circle_outline, size: 20),
-                  label: const Text('Añadir Fondos'),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => AddFundsPage(goal: goal),
-                      ),
-                    );
-                  },
-                  style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).primaryColor,
-                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+              if (showAddFundsButton)
+                const SizedBox(height: 16),
+              if (showAddFundsButton)
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.add_circle_outline, size: 20),
+                    label: const Text('Añadir Fondos'),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => AddFundsPage(goal: goal),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).primaryColor,
+                      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

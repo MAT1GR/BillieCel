@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/pages/add_budget_page.dart';
+import 'package:provider/provider.dart';
 
 import 'package:rxdart/rxdart.dart';
 
 class BudgetsPage extends StatefulWidget {
-  const BudgetsPage({super.key});
+  final CoupleMode mode;
+  const BudgetsPage({super.key, this.mode = CoupleMode.personal});
 
   @override
   State<BudgetsPage> createState() => _BudgetsPageState();
@@ -16,26 +19,57 @@ class BudgetsPage extends StatefulWidget {
 
 class _BudgetsPageState extends State<BudgetsPage> {
   final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$ ');
-  late final Stream<List<Map<String, dynamic>>> _budgetsStream;
-  late final Stream<List<Map<String, dynamic>>> _transactionsStream;
+  late Stream<List<Map<String, dynamic>>> _budgetsStream;
+  late Stream<List<Map<String, dynamic>>> _transactionsStream;
   Map<String, Map<String, dynamic>> _categoryDetails = {};
 
   @override
   void initState() {
     super.initState();
+    _setupStreams();
+    _loadCategoryDetails();
+  }
+
+  void _setupStreams() {
+    final userId = supabase.auth.currentUser!.id;
+    final coupleModeProvider = context.read<CoupleModeProvider>();
+
+    List<String> userIds = [userId];
+    if (widget.mode == CoupleMode.joint && coupleModeProvider.isCoupleActive) {
+      userIds.add(coupleModeProvider.partnerId!);
+    }
+
     final now = DateTime.now();
-    _budgetsStream = supabase.from('budgets').stream(primaryKey: ['id']).map((listOfBudgets) {
-      return listOfBudgets
+    _budgetsStream = supabase
+        .from('budgets')
+        .stream(primaryKey: ['id'])
+        .inFilter('user_id', userIds)
+        .map((listOfBudgets) {
+      return (listOfBudgets as List)
+          .cast<Map<String, dynamic>>()
           .where((budget) => budget['month'] == now.month && budget['year'] == now.year)
           .toList();
     });
 
-    dynamic query = supabase.from('transactions').stream(primaryKey: ['id']);
-    query = query.eq('type', 'expense');
-    query = query.gte('date', DateTime(now.year, now.month, 1).toIso8601String());
-    _transactionsStream = query.lte('date', DateTime(now.year, now.month + 1, 0).toIso8601String());
-
-    _loadCategoryDetails();
+    final startDate = DateTime(now.year, now.month, 1);
+    final endDate = DateTime(now.year, now.month + 1, 0);
+    _transactionsStream = supabase
+        .from('transactions')
+        .stream(primaryKey: ['id'])
+        .inFilter('user_id', userIds)
+        .map((listOfTransactions) {
+      return (listOfTransactions as List)
+          .cast<Map<String, dynamic>>()
+          .where((tx) {
+        final type = tx['type'] as String?;
+        if (type != 'expense') return false;
+        final dateStr = tx['date'] as String?;
+        if (dateStr == null) return false;
+        final dt = DateTime.tryParse(dateStr);
+        if (dt == null) return false;
+        return !dt.isBefore(startDate) && !dt.isAfter(endDate);
+      }).toList();
+    });
   }
 
   Future<void> _loadCategoryDetails() async {
@@ -96,29 +130,34 @@ class _BudgetsPageState extends State<BudgetsPage> {
               final budget = budgets[index];
               final categoryDetail = _categoryDetails[budget['category']];
               final spentAmount = spentByCategory[budget['category']] ?? 0.0;
+              final isOwnBudget = budget['user_id'] == supabase.auth.currentUser!.id;
 
               return BudgetListItem(
                 budget: budget,
                 categoryDetail: categoryDetail,
                 spentAmount: spentAmount,
                 currencyFormat: currencyFormat,
-                onLongPress: () => _showBudgetOptions(context, budget),
+                onLongPress: isOwnBudget && widget.mode == CoupleMode.personal
+                    ? () => _showBudgetOptions(context, budget)
+                    : null,
               );
             },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const AddBudgetPage(budget: {}),
-            ),
-          );
-        },
-        backgroundColor: Theme.of(context).primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      floatingActionButton: widget.mode == CoupleMode.personal
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const AddBudgetPage(budget: {}),
+                  ),
+                );
+              },
+              backgroundColor: Theme.of(context).primaryColor,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
     );
   }
 
@@ -203,7 +242,7 @@ class BudgetListItem extends StatelessWidget {
   final Map<String, dynamic>? categoryDetail;
   final double spentAmount;
   final NumberFormat currencyFormat;
-  final VoidCallback onLongPress;
+  final VoidCallback? onLongPress;
 
   const BudgetListItem({
     super.key,

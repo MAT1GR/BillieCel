@@ -6,16 +6,21 @@ class LoadingShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDarkMode ? Colors.grey[800]! : Colors.grey[300]!;
+    final highlightColor = isDarkMode ? Colors.grey[700]! : Colors.grey[100]!;
+    final containerColor = isDarkMode ? Colors.grey[700]! : Colors.white;
+
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: baseColor,
+      highlightColor: highlightColor,
       child: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
           Container(
             height: 200,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: containerColor,
               borderRadius: BorderRadius.circular(16),
             ),
           ),
@@ -23,7 +28,7 @@ class LoadingShimmer extends StatelessWidget {
           Container(
             height: 80,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: containerColor,
               borderRadius: BorderRadius.circular(16),
             ),
           ),
@@ -31,7 +36,7 @@ class LoadingShimmer extends StatelessWidget {
           Container(
             height: 80,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: containerColor,
               borderRadius: BorderRadius.circular(16),
             ),
           ),
@@ -39,7 +44,7 @@ class LoadingShimmer extends StatelessWidget {
           Container(
             height: 80,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: containerColor,
               borderRadius: BorderRadius.circular(16),
             ),
           ),

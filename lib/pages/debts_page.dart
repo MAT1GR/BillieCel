@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/pages/add_debt_page.dart';
+import 'package:mi_billetera_digital/models/debt_model.dart';
 import 'package:mi_billetera_digital/pages/pay_debt_page.dart';
 import 'package:mi_billetera_digital/widgets/debt_list_item.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
@@ -21,6 +22,10 @@ class _DebtsPageState extends State<DebtsPage> with SingleTickerProviderStateMix
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _setupStream();
+  }
+
+  void _setupStream() {
     dynamic query = supabase.from('debts').stream(primaryKey: ['id']);
     query = query.eq('is_paid', false);
     _debtsStream = query.order('created_at', ascending: false);
@@ -119,11 +124,12 @@ class _DebtsPageState extends State<DebtsPage> with SingleTickerProviderStateMix
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
+        onPressed: () async {
           final debtType = _tabController.index == 0 ? DebtType.owed : DebtType.owing;
-          Navigator.of(context).push(
+          await Navigator.of(context).push(
             MaterialPageRoute(builder: (context) => AddDebtPage(initialDebtType: debtType)),
           );
+          _setupStream(); // Refresh stream after adding debt
         },
         child: const Icon(Icons.add),
       ),
@@ -165,21 +171,27 @@ class _DebtsPageState extends State<DebtsPage> with SingleTickerProviderStateMix
                 ListTile(
                   leading: Icon(Icons.payment, color: Theme.of(context).primaryColor),
                   title: const Text('Realizar Pago'),
-                  onTap: () {
+                  onTap: () async {
                     Navigator.of(context).pop();
-                    Navigator.of(context).push(
+                    await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => PayDebtPage(debt: debt),
                       ),
                     );
+                    _setupStream(); // Refresh stream after paying debt
                   },
                 ),
               ListTile(
-                leading: const Icon(Icons.check, color: Colors.green),
-                title: const Text('Marcar como Pagada'),
-                onTap: () {
+                leading: Icon(Icons.edit, color: Theme.of(context).primaryColor),
+                title: const Text('Editar Deuda'),
+                onTap: () async {
                   Navigator.of(context).pop();
-                  _markAsPaid(context, debt);
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => AddDebtPage(debt: debt),
+                    ),
+                  );
+                  _setupStream(); // Refresh stream after editing debt
                 },
               ),
               ListTile(

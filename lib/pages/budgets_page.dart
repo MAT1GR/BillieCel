@@ -147,12 +147,13 @@ class _BudgetsPageState extends State<BudgetsPage> {
       ),
       floatingActionButton: widget.mode == CoupleMode.personal
           ? FloatingActionButton(
-              onPressed: () {
-                Navigator.of(context).push(
+              onPressed: () async {
+                await Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const AddBudgetPage(budget: {}),
                   ),
                 );
+                _setupStreams(); // Refresh streams after adding budget
               },
               backgroundColor: Theme.of(context).primaryColor,
               child: const Icon(Icons.add, color: Colors.white),
@@ -170,13 +171,14 @@ class _BudgetsPageState extends State<BudgetsPage> {
             ListTile(
               leading: Icon(Icons.edit, color: Theme.of(context).primaryColor),
               title: const Text('Editar Presupuesto'),
-              onTap: () {
+              onTap: () async {
                 Navigator.of(context).pop();
-                Navigator.of(context).push(
+                await Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => AddBudgetPage(budget: budget),
                   ),
                 );
+                _setupStreams(); // Refresh streams after editing budget
               },
             ),
             ListTile(

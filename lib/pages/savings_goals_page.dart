@@ -54,25 +54,27 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
                 color: Theme.of(context).primaryColor,
               ),
               title: const Text('Añadir Fondos'),
-              onTap: () {
+              onTap: () async {
                 Navigator.of(context).pop();
-                Navigator.of(context).push(
+                await Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => AddFundsPage(goal: goal),
                   ),
                 );
+                _setupStream(); // Refresh stream after adding funds
               },
             ),
             ListTile(
               leading: Icon(Icons.edit, color: Theme.of(context).primaryColor),
               title: const Text('Editar Meta'),
-              onTap: () {
+              onTap: () async {
                 Navigator.of(context).pop();
-                Navigator.of(context).push(
+                await Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => AddSavingsGoalPage(goal: goal),
                   ),
                 );
+                _setupStream(); // Refresh stream after editing goal
               },
             ),
             ListTile(
@@ -175,12 +177,13 @@ class _SavingsGoalsPageState extends State<SavingsGoalsPage> {
       ),
       floatingActionButton: widget.mode == CoupleMode.personal
           ? FloatingActionButton(
-              onPressed: () {
-                Navigator.of(context).push(
+              onPressed: () async {
+                await Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const AddSavingsGoalPage(goal: {}),
                   ),
                 );
+                _setupStream(); // Refresh stream after adding goal
               },
               backgroundColor: Theme.of(context).primaryColor,
               child: const Icon(Icons.add, color: Colors.white),

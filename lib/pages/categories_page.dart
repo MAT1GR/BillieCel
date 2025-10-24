@@ -101,12 +101,13 @@ class _CategoriesPageState extends State<CategoriesPage> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.edit),
-                      onPressed: () {
-                        Navigator.of(context).push(
+                      onPressed: () async {
+                        await Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => AddCategoryPage(category: category),
                           ),
                         );
+                        _categoriesStream = supabase.from('categories').stream(primaryKey: ['id']).order('name'); // Refresh stream
                       },
                     ),
                                     IconButton(
@@ -134,6 +135,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                                         if (confirm == true) {
                                           try {
                                             await supabase.from('categories').delete().match({'id': category['id']});
+                                            _categoriesStream = supabase.from('categories').stream(primaryKey: ['id']).order('name'); // Refresh stream
                                           } catch (e) {
                                             if (mounted) {
                                               ScaffoldMessenger.of(context).showSnackBar(
@@ -151,10 +153,11 @@ class _CategoriesPageState extends State<CategoriesPage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
+        onPressed: () async {
+          await Navigator.of(context).push(
             MaterialPageRoute(builder: (context) => const AddCategoryPage()),
           );
+          _categoriesStream = supabase.from('categories').stream(primaryKey: ['id']).order('name'); // Refresh stream
         },
         child: const Icon(Icons.add),
       ),

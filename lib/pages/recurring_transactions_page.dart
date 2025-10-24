@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/pages/add_recurring_transaction_page.dart';
 import 'package:mi_billetera_digital/widgets/account_logo_widget.dart';
-import 'package:supabase/src/supabase_stream_builder.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RecurringTransactionsPage extends StatefulWidget {
   const RecurringTransactionsPage({super.key});
@@ -14,11 +14,15 @@ class RecurringTransactionsPage extends StatefulWidget {
 }
 
 class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
-  Stream<List<Map<String, dynamic>>>? _recurringTransactionsStream;
+  late Stream<List<Map<String, dynamic>>> _recurringTransactionsStream;
 
   @override
   void initState() {
     super.initState();
+    _setupRecurringTransactionsStream();
+  }
+
+  void _setupRecurringTransactionsStream() {
     final currentUser = supabase.auth.currentUser;
     if (currentUser != null) {
       final userId = currentUser.id;
@@ -80,12 +84,13 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.of(context).push(
+            onPressed: () async {
+              await Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => const AddRecurringTransactionPage(),
                 ),
               );
+              _setupRecurringTransactionsStream(); // Refresh stream
             },
           ),
         ],
@@ -116,13 +121,14 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
                         ),
                         const SizedBox(height: 16),
                         FloatingActionButton.extended(
-                          onPressed: () {
-                            Navigator.of(context).push(
+                          onPressed: () async {
+                            await Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) =>
                                     const AddRecurringTransactionPage(),
                               ),
                             );
+                            _setupRecurringTransactionsStream(); // Refresh stream
                           },
                           label: const Text('Crear Transacción Automática'),
                           icon: const Icon(Icons.add),
@@ -219,15 +225,4 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
   }
 }
 
-extension on Stream<List<Map<String, dynamic>>> {
-  Stream<List<Map<String, dynamic>>>? order(
-    String s, {
-    required bool ascending,
-  }) {
-    return null;
-  }
-}
 
-extension on SupabaseStreamBuilder {
-  select(String s) {}
-}

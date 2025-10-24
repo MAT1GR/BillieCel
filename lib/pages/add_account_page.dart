@@ -89,9 +89,6 @@ class _AddAccountPageState extends State<AddAccountPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? 'Editar Cuenta' : 'Nueva Cuenta'),
-        actions: [
-          IconButton(icon: const Icon(Icons.check), onPressed: _saveAccount),
-        ],
       ),
       body: Center(
         child: SingleChildScrollView(

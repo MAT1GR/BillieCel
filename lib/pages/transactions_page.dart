@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -11,6 +13,7 @@ import 'package:mi_billetera_digital/widgets/financial_summary_card.dart';
 import 'package:mi_billetera_digital/pages/analysis_page.dart';
 import 'package:mi_billetera_digital/widgets/transaction_list_item.dart';
 import 'package:mi_billetera_digital/widgets/filter_bottom_sheet.dart';
+import 'package:mi_billetera_digital/models/financial_summary_data.dart'; // Import FinancialSummaryData from its new location
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
@@ -73,15 +76,35 @@ class _TransactionsPageState extends State<TransactionsPage> {
         .stream(primaryKey: ['id'])
         .order('name');
 
-    _transactionsSubscription = _transactionsStream.listen((transactions) {
-      _transactionsNotifier.value = transactions;
-      _recalculateSummary();
-    });
+    _transactionsSubscription =
+        _transactionsStream.listen((transactions) {
+          _transactionsNotifier.value = transactions;
+          _recalculateSummary();
+        })..onError((error) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error al cargar transacciones: $error'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+        });
 
-    _accountsSubscription = _accountsStream.listen((accounts) {
-      _accountsNotifier.value = accounts;
-      _recalculateSummary();
-    });
+    _accountsSubscription =
+        _accountsStream.listen((accounts) {
+          _accountsNotifier.value = accounts;
+          _recalculateSummary();
+        })..onError((error) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error al cargar cuentas: $error'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+        });
   }
 
   Stream<List<Map<String, dynamic>>> _buildTransactionsStream() {
@@ -189,12 +212,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
     }
   }
 
-  void _navigateToAddTransaction(String type) {
-    Navigator.of(context).push(
+  void _navigateToAddTransaction(String type) async {
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => AddTransactionPage(initialType: type),
       ),
     );
+    _resetAndBuildStreams();
   }
 
   Future<void> _showOptions(
@@ -211,22 +235,29 @@ class _TransactionsPageState extends State<TransactionsPage> {
           child: Wrap(
             children: [
               ListTile(
-                leading: Icon(Icons.edit, color: Theme.of(context).primaryColor),
+                leading: Icon(
+                  Icons.edit,
+                  color: Theme.of(context).primaryColor,
+                ),
                 title: const Text('Editar'),
-                onTap: () {
+                onTap: () async {
+                  // Made async
                   Navigator.of(context).pop();
-                  Navigator.of(context).push(
+                  await Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) =>
                           AddTransactionPage(transaction: transaction),
                     ),
                   );
+                  _resetAndBuildStreams(); // Refresh after edit
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.redAccent),
-                title: const Text('Eliminar',
-                    style: TextStyle(color: Colors.redAccent)),
+                title: const Text(
+                  'Eliminar',
+                  style: TextStyle(color: Colors.redAccent),
+                ),
                 onTap: () {
                   Navigator.of(context).pop();
                   _deleteTransaction(context, transaction);
@@ -247,8 +278,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirmar eliminación'),
-        content:
-            const Text('¿Seguro que quieres eliminar esta transacción?'),
+        content: const Text('¿Seguro que quieres eliminar esta transacción?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -256,8 +286,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Eliminar',
-                style: TextStyle(color: Colors.red)),
+            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -265,18 +294,19 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
     if (confirm == true && mounted) {
       try {
-        await supabase
-            .from('transactions')
-            .delete()
-            .match({'id': transaction['id']});
+        await supabase.from('transactions').delete().match({
+          'id': transaction['id'],
+        });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Transacción eliminada')));
+            const SnackBar(content: Text('Transacción eliminada')),
+          );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error al eliminar: $e')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error al eliminar: $e')));
         }
       }
     }
@@ -297,9 +327,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 saldo: currencyFormat.format(summary.totalBalance),
                 cashBalance: currencyFormat.format(summary.cashBalance),
                 virtualBalance: currencyFormat.format(summary.virtualBalance),
-                expenseData: summary.expenseByCategory,
-                showPieChart: false,
-                showMonthlySummary: false, totalIngresos: '', totalEgresos: '',
+                expenseData: const {},
+                showMonthlySummary: false,
               ),
             ),
           ),
@@ -351,16 +380,34 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   return const LoadingShimmer();
                 }
                 if (transactions.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 48.0),
-                      child: Text(
-                        'Aún no tienes transacciones.',
-                        style: TextStyle(
-                          color: AppTheme.subtextColor,
-                          fontSize: 16,
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.receipt_long,
+                          size: 80,
+                          color: AppTheme.subtextColor.withOpacity(0.5),
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Aún no tienes transacciones registradas.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppTheme.subtextColor,
+                            fontSize: 18,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '¡Empieza a añadir tus movimientos financieros!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppTheme.subtextColor,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 }
@@ -380,30 +427,67 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
         ],
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(left: 32.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            FloatingActionButton.extended(
-              heroTag: 'fab_expense',
-              onPressed: () => _navigateToAddTransaction('expense'),
-              label: const Text('Egreso'),
-              icon: const Icon(Icons.remove),
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
+      floatingActionButton: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: 5,
+                  sigmaY: 5,
+                ), // Subtle blur effect
+                child: Container(
+                  height: 100, // Adjust height as needed to cover FABs
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor
+                        .withOpacity(0.7), // Semi-transparent overlay
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
             ),
-            FloatingActionButton.extended(
-              heroTag: 'fab_income',
-              onPressed: () => _navigateToAddTransaction('income'),
-              label: const Text('Ingreso'),
-              icon: const Icon(Icons.add),
-              backgroundColor: AppTheme.accentColor,
-              foregroundColor: Colors.white,
+          ),
+          Padding(
+            padding: const EdgeInsets.only(
+              left: 32.0,
+              top: 16.0,
+              bottom: 16.0,
+              right: 16.0,
             ),
-          ],
-        ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                FloatingActionButton.extended(
+                  heroTag: 'fab_expense',
+                  onPressed: () => _navigateToAddTransaction('expense'),
+                  label: const Text('Egreso'),
+                  icon: const Icon(Icons.remove),
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+                FloatingActionButton.extended(
+                  heroTag: 'fab_income',
+                  onPressed: () => _navigateToAddTransaction('income'),
+                  label: const Text('Ingreso'),
+                  icon: const Icon(Icons.add),
+                  backgroundColor: AppTheme.accentColor,
+                  foregroundColor: Colors.white,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }

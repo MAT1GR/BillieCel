@@ -147,7 +147,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Type selection (Income/Expense)
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Tipo'),
-                    value: _type, // Use value instead of initialValue for dynamic updates
+                    initialValue: _type, // Use value instead of initialValue for dynamic updates
                     items: const [
                       DropdownMenuItem(value: 'income', child: Text('Ingreso')),
                       DropdownMenuItem(value: 'expense', child: Text('Egreso')),
@@ -187,7 +187,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Category
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Categoría'),
-                    value: _selectedCategory, // Use value instead of initialValue
+                    initialValue: _selectedCategory, // Use value instead of initialValue
                     items: categories.map((category) {
                       return DropdownMenuItem<String>(
                         value: category['name'] as String,
@@ -206,7 +206,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Account
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Cuenta'),
-                    value: _selectedAccountId, // Use value instead of initialValue
+                    initialValue: _selectedAccountId, // Use value instead of initialValue
                     items: accounts.map((account) {
                       return DropdownMenuItem(
                         value: account['id'].toString(),
@@ -225,7 +225,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Frequency
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Frecuencia'),
-                    value: _frequency, // Use value instead of initialValue
+                    initialValue: _frequency, // Use value instead of initialValue
                     items: const [
                       DropdownMenuItem(value: 'daily', child: Text('Diaria')),
                       DropdownMenuItem(value: 'weekly', child: Text('Semanal')),

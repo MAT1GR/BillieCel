@@ -113,6 +113,11 @@ class _TasksPageState extends State<TasksPage> {
     if (confirm == true) {
       try {
         await supabase.from('tasks').delete().match({'id': task['id']});
+        _tasksStream = supabase
+            .from('tasks')
+            .stream(primaryKey: ['id'])
+            .order('completed')
+            .order('created_at', ascending: false); // Refresh stream
         if (mounted) {
           ScaffoldMessenger.of(
             context,
@@ -180,8 +185,13 @@ class _TasksPageState extends State<TasksPage> {
                         task['completed'],
                       ); // Corregido
                     },
-                    onLongPress: () {
-                      _showOptions(context, task);
+                    onLongPress: () async {
+                      await _showOptions(context, task);
+                      _tasksStream = supabase
+                          .from('tasks')
+                          .stream(primaryKey: ['id'])
+                          .order('completed')
+                          .order('created_at', ascending: false); // Refresh stream
                     },
                   );
                 }),
@@ -190,10 +200,15 @@ class _TasksPageState extends State<TasksPage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(
+        onPressed: () async {
+          await Navigator.of(
             context,
           ).push(MaterialPageRoute(builder: (context) => const AddTaskPage()));
+          _tasksStream = supabase
+              .from('tasks')
+              .stream(primaryKey: ['id'])
+              .order('completed')
+              .order('created_at', ascending: false); // Refresh stream
         },
         backgroundColor: AppTheme.primaryColor,
         child: const Icon(Icons.add, color: Colors.white),

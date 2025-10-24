@@ -24,13 +24,13 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
   }
 
   // --- LISTA DE PÁGINAS REORDENADA ---
-  static const List<Widget> _widgetOptions = <Widget>[
-    TransactionsPage(),
-    FinancesPage(),
-    DebtsPage(),
-    AnalysisPage(),
-    CalculatorPage(),
-    ProfilePage(),
+  static final List<Widget> _widgetOptions = <Widget>[
+    const TransactionsPage(),
+    const FinancesPage(),
+    const DebtsPage(),
+    const AnalysisPage(),
+    const CalculatorPage(),
+    const ProfilePage(),
   ];
 
   void _onItemTapped(int index) {

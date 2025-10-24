@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
+import 'package:mi_billetera_digital/models/debt_model.dart';
 import 'package:mi_billetera_digital/utils/currency_input_formatter.dart';
-
-enum DebtType { owed, owing }
 
 class AddDebtPage extends StatefulWidget {
   final DebtType? initialDebtType;
+  final Map<String, dynamic>? debt;
 
-  const AddDebtPage({super.key, this.initialDebtType});
+  const AddDebtPage({super.key, this.initialDebtType, this.debt});
 
   @override
   State<AddDebtPage> createState() => _AddDebtPageState();
@@ -27,6 +27,14 @@ class _AddDebtPageState extends State<AddDebtPage> {
     if (widget.initialDebtType != null) {
       _debtType = widget.initialDebtType!;
     }
+    if (widget.debt != null) {
+      final debt = widget.debt!;
+      _nameController.text = debt['person_name'];
+      _amountController.text = (debt['original_amount'] as num).toString();
+      _descriptionController.text = debt['description'] ?? '';
+      _dueDate = debt['due_date'] != null ? DateTime.parse(debt['due_date']) : null;
+      _debtType = (debt['amount'] as num) > 0 ? DebtType.owed : DebtType.owing;
+    }
   }
 
   Future<void> _saveDebt() async {
@@ -35,7 +43,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
       final finalAmount = _debtType == DebtType.owed ? amount : -amount;
 
       try {
-        await supabase.from('debts').insert({
+        final data = {
           'user_id': supabase.auth.currentUser!.id,
           'person_name': _nameController.text,
           'amount': finalAmount,
@@ -43,7 +51,13 @@ class _AddDebtPageState extends State<AddDebtPage> {
           'description': _descriptionController.text,
           'due_date': _dueDate?.toIso8601String(),
           'is_paid': false,
-        });
+        };
+
+        if (widget.debt != null) {
+          await supabase.from('debts').update(data).match({'id': widget.debt!['id']});
+        } else {
+          await supabase.from('debts').insert(data);
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

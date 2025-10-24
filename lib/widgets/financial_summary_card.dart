@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 
 class FinancialSummaryCard extends StatelessWidget {
-  final String totalIngresos, totalEgresos, saldo, cashBalance, virtualBalance;
-  final Map<String, double> expenseData;
-  final bool showPieChart;
+  final String saldo, cashBalance, virtualBalance;
+  final String totalIngresos, totalEgresos;
+  final Map<String, double> expenseData; // Made optional
   final bool showMonthlySummary;
 
   const FinancialSummaryCard({
     super.key,
-    required this.totalIngresos,
-    required this.totalEgresos,
+    this.totalIngresos = '',
+    this.totalEgresos = '',
     required this.saldo,
     required this.cashBalance,
     required this.virtualBalance,
-    required this.expenseData,
-    this.showPieChart = true, // Default to true
+    this.expenseData = const {},
     this.showMonthlySummary = true,
   });
 
@@ -29,28 +27,6 @@ class FinancialSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<PieChartSectionData> pieChartSections = [];
-    final totalAmount = expenseData.values.fold<double>(0, (a, b) => a + b);
-
-    if (totalAmount > 0) {
-      expenseData.forEach((category, amount) {
-        pieChartSections.add(
-          PieChartSectionData(
-            color: _getColorForCategory(category),
-            value: amount,
-            title: '${(amount / totalAmount * 100).toStringAsFixed(0)}%',
-            radius: 45,
-            titleStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              shadows: [Shadow(color: Colors.black26, blurRadius: 2)],
-            ),
-          ),
-        );
-      });
-    }
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -101,31 +77,8 @@ class FinancialSummaryCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (showPieChart)
-                  SizedBox(
-                    height: 100,
-                    width: 100,
-                    child: pieChartSections.isEmpty
-                        ? const Icon(
-                            Icons.pie_chart_outline,
-                            size: 60,
-                            color: Colors.grey,
-                          )
-                        : PieChart(
-                            PieChartData(
-                              sections: pieChartSections,
-                              borderData: FlBorderData(show: false),
-                              sectionsSpace: 2,
-                              centerSpaceRadius: 20,
-                            ),
-                          ),
-                  ),
               ],
             ),
-            if (showPieChart && expenseData.isNotEmpty) ...[
-              const Divider(height: 30),
-              _CategoryLegend(expenseData: expenseData, getColorForCategory: _getColorForCategory),
-            ],
             if (showMonthlySummary) ...[
               const Divider(height: 40),
               Row(
@@ -193,62 +146,6 @@ class FinancialSummaryCard extends StatelessWidget {
             color: color,
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _CategoryLegend extends StatelessWidget {
-  final Map<String, double> expenseData;
-  final Color Function(String) getColorForCategory;
-
-  const _CategoryLegend({required this.expenseData, required this.getColorForCategory});
-
-  @override
-  Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$ ');
-    final sortedExpenses = expenseData.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return Wrap(
-      spacing: 24.0,
-      runSpacing: 8.0,
-      alignment: WrapAlignment.center,
-      children: sortedExpenses.map((entry) {
-        return _LegendItem(
-          color: getColorForCategory(entry.key),
-          label: entry.key,
-          amount: currencyFormat.format(entry.value),
-        );
-      }).toList(),
-    );
-  }
-}
-
-class _LegendItem extends StatelessWidget {
-  final Color color;
-  final String label;
-  final String amount;
-
-  const _LegendItem({required this.color, required this.label, required this.amount});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 13)),
-        const SizedBox(width: 6),
-        Text(amount, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
       ],
     );
   }

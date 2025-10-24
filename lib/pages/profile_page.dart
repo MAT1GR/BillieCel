@@ -28,11 +28,12 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _loadPreferences();
-    @override
-    void dispose() {
-      _usernameController.dispose();
-      super.dispose();
-    }
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPreferences() async {

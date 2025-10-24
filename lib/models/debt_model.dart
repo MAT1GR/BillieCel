@@ -1,0 +1,2 @@
+
+enum DebtType { owed, owing }

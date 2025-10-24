@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/widgets/financial_summary_card.dart';
+import 'package:mi_billetera_digital/widgets/expense_pie_chart_card.dart';
 import 'package:mi_billetera_digital/widgets/transaction_list_item.dart';
 import 'package:mi_billetera_digital/pages/add_transaction_page.dart';
+import 'package:mi_billetera_digital/models/financial_summary_data.dart';
 
 enum SummaryViewType { weekly, monthly, yearly }
 
@@ -304,44 +306,59 @@ class MonthlySummaryView extends StatelessWidget {
     );
 
     return ListView(
-      padding: const EdgeInsets.all(16.0),
       children: [
-        SegmentedButton<SummaryViewType>(
-          segments: const [
-            ButtonSegment(
-              value: SummaryViewType.monthly,
-              label: Text('Mensual'),
-            ),
-            ButtonSegment(
-              value: SummaryViewType.weekly,
-              label: Text('Semanal'),
-            ),
-            ButtonSegment(value: SummaryViewType.yearly, label: Text('Anual')),
-          ],
-          selected: {viewType},
-          onSelectionChanged: (newSelection) {
-            onViewChange(newSelection.first);
-          },
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: SegmentedButton<SummaryViewType>(
+            segments: const [
+              ButtonSegment(
+                value: SummaryViewType.monthly,
+                label: Text('Mensual'),
+              ),
+              ButtonSegment(
+                value: SummaryViewType.weekly,
+                label: Text('Semanal'),
+              ),
+              ButtonSegment(value: SummaryViewType.yearly, label: Text('Anual')),
+            ],
+            selected: {viewType},
+            onSelectionChanged: (newSelection) {
+              onViewChange(newSelection.first);
+            },
+          ),
         ),
         const SizedBox(height: 16),
-        _buildDateNavigator(context),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: _buildDateNavigator(context),
+        ),
         const SizedBox(height: 16),
         ValueListenableBuilder<FinancialSummaryData>(
           valueListenable: summaryNotifier,
           builder: (context, summary, _) => FinancialSummaryCard(
             totalIngresos: currencyFormat.format(summary.totalIngresos),
             totalEgresos: currencyFormat.format(summary.totalEgresos),
-            saldo: currencyFormat.format(summary.totalBalance),
+            saldo: currencyFormat.format(summary.saldo),
             cashBalance: currencyFormat.format(summary.cashBalance),
             virtualBalance: currencyFormat.format(summary.virtualBalance),
             expenseData: summary.expenseByCategory,
-            showPieChart: true,
+            showMonthlySummary: true,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ValueListenableBuilder<FinancialSummaryData>(
+          valueListenable: summaryNotifier,
+          builder: (context, summary, _) => ExpensePieChartCard(
+            expenseData: summary.expenseByCategory,
           ),
         ),
         const Divider(height: 32),
-        Text(
-          'Movimientos del Periodo',
-          style: Theme.of(context).textTheme.titleLarge,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text(
+            'Movimientos del Periodo',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
         ),
         const SizedBox(height: 8),
         ValueListenableBuilder<List<Map<String, dynamic>>>(
@@ -361,9 +378,12 @@ class MonthlySummaryView extends StatelessWidget {
               itemCount: transactions.length,
               itemBuilder: (context, index) {
                 final transaction = transactions[index];
-                return TransactionListItem(
-                  transaction: transaction,
-                  onLongPress: () => onTransactionLongPress(transaction),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: TransactionListItem(
+                    transaction: transaction,
+                    onLongPress: () => onTransactionLongPress(transaction),
+                  ),
                 );
               },
             );
@@ -420,24 +440,4 @@ class MonthlySummaryView extends StatelessWidget {
       ],
     );
   }
-}
-
-class FinancialSummaryData {
-  final double totalIngresos;
-  final double totalEgresos;
-  final double saldo;
-  final Map<String, double> expenseByCategory;
-  final double totalBalance;
-  final double cashBalance;
-  final double virtualBalance;
-
-  FinancialSummaryData({
-    this.totalIngresos = 0.0,
-    this.totalEgresos = 0.0,
-    this.saldo = 0.0,
-    this.expenseByCategory = const {},
-    this.totalBalance = 0.0,
-    this.cashBalance = 0.0,
-    this.virtualBalance = 0.0,
-  });
 }

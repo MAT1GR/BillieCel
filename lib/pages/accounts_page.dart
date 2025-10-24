@@ -303,9 +303,10 @@ class _AccountsPageState extends State<AccountsPage> {
     }
   }
 
-  void _navigateToAddAccount({Map<String, dynamic>? account}) {
-    Navigator.of(context).push(
+  void _navigateToAddAccount({Map<String, dynamic>? account}) async {
+    await Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => AddAccountPage(account: account)),
     );
+    _setupStream(); // Refresh stream after adding/editing account
   }
 }

@@ -28,9 +28,9 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
       final userId = currentUser.id;
       _recurringTransactionsStream = supabase
           .from('recurring_transactions')
+          .select('*, accounts(name, icon), categories(name, icon)')
           .stream(primaryKey: ['id'])
           .eq('user_id', userId)
-          .select('*, accounts(name, icon), categories(name, icon)')
           .order('next_occurrence_date', ascending: true);
     }
   }

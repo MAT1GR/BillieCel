@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/pages/auth_gate_page.dart';
+import 'package:mi_billetera_digital/pages/onboarding_flow_page.dart';
 import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
-import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:intl/date_symbol_data_local.dart'; // <-- 1. Importa esta librería
-
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. Inicializa el formato de fecha para español/Argentina
   await initializeDateFormatting('es_AR', null);
 
   await Supabase.initialize(
@@ -28,10 +28,12 @@ void main() async {
     AppTheme.themeNotifier.value = ThemeMode.light;
   }
 
+  final bool hasCompletedOnboarding = prefs.getBool('has_completed_onboarding') ?? false;
+
   runApp(
     ChangeNotifierProvider(
       create: (context) => CoupleModeProvider(),
-      child: const MyApp(),
+      child: MyApp(showOnboarding: !hasCompletedOnboarding), // Pass the flag to MyApp
     ),
   );
 }
@@ -39,7 +41,9 @@ void main() async {
 final supabase = Supabase.instance.client;
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool showOnboarding;
+
+  const MyApp({super.key, required this.showOnboarding});
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +56,7 @@ class MyApp extends StatelessWidget {
           darkTheme: AppTheme.darkTheme,
           themeMode: currentMode,
           debugShowCheckedModeBanner: false,
-          home: const AuthGatePage(),
+          home: showOnboarding ? const OnboardingFlowPage() : const AuthGatePage(),
         );
       },
     );

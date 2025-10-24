@@ -101,23 +101,24 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    FittedBox(
-                      fit: BoxFit.fitWidth,
-                      child: Text(
-                        _expression,
-                        style: GoogleFonts.robotoMono(fontSize: 48, color: Colors.grey),
+                    Text(
+                      _expression,
+                      style: GoogleFonts.robotoMono(
+                        fontSize: MediaQuery.of(context).size.width * 0.08, // Responsive font size
+                        color: Colors.grey,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    FittedBox(
-                      fit: BoxFit.fitWidth,
-                      child: Text(
-                        _result,
-                        style: GoogleFonts.robotoMono(
-                          fontSize: 80,
-                          fontWeight: FontWeight.bold,
-                          color: displayTextColor,
-                        ),
+                    Text(
+                      _result,
+                      style: GoogleFonts.robotoMono(
+                        fontSize: MediaQuery.of(context).size.width * 0.15, // Responsive font size
+                        fontWeight: FontWeight.bold,
+                        color: displayTextColor,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -125,13 +126,18 @@ class _CalculatorPageState extends State<CalculatorPage> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _balanceButton('Efectivo', _cashBalance, isDarkMode),
-                  _balanceButton('Virtual', _virtualBalance, isDarkMode),
-                  _balanceButton('Total', _totalBalance, isDarkMode),
-                ],
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _balanceButton('Efectivo', _cashBalance, isDarkMode),
+                    const SizedBox(width: 8),
+                    _balanceButton('Virtual', _virtualBalance, isDarkMode),
+                    const SizedBox(width: 8),
+                    _balanceButton('Total', _totalBalance, isDarkMode),
+                  ],
+                ),
               ),
             ),
             const Divider(height: 1),
@@ -216,7 +222,10 @@ class _CalculatorPageState extends State<CalculatorPage> {
               ? const Icon(Icons.backspace_outlined)
               : Text(
                   buttonText,
-                  style: GoogleFonts.robotoMono(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.robotoMono(
+                    fontSize: MediaQuery.of(context).size.width * 0.07, // Responsive font size
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
         ),
       ),

@@ -151,6 +151,15 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
                         vertical: 8,
                       ),
                       child: ListTile(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => AddRecurringTransactionPage(
+                                recurringTransaction: transaction,
+                              ),
+                            ),
+                          );
+                        },
                         leading: AccountLogoWidget(
                           accountName: transaction['accounts']['name'],
                           iconPath: transaction['accounts']['icon'] ?? '',
@@ -166,7 +175,31 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
                               children: [
                                 const Icon(Icons.category, size: 16),
                                 const SizedBox(width: 4),
-                                Text(transaction['category']),
+                                Text(transaction['categories']['name']),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                const Text('Activa:'),
+                                Switch(
+                                  value: transaction['is_active'] ?? true, // Assuming 'is_active' column exists, default to true
+                                  onChanged: (bool value) async {
+                                    try {
+                                      await supabase.from('recurring_transactions').update({'is_active': value}).eq('id', transaction['id']);
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Transacción ${value ? 'activada' : 'pausada'}.')),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Error al cambiar estado: $e')),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
                               ],
                             ),
                           ],

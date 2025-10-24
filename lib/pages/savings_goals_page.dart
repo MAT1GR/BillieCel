@@ -222,12 +222,25 @@ class SavingsGoalListItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                goal['name'],
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    goal['name'],
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '${(progress * 100).toStringAsFixed(0)}%',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.subtextColor,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               LinearProgressIndicator(
@@ -256,6 +269,14 @@ class SavingsGoalListItem extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 4),
+              Text(
+                'Faltan: ${currencyFormat.format(targetAmount - currentAmount)}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
               if (showAddFundsButton)
                 const SizedBox(height: 16),
               if (showAddFundsButton)
@@ -278,7 +299,7 @@ class SavingsGoalListItem extends StatelessWidget {
                   ),
                 ),
             ],
-          ),
+          ), // This closes the Column
         ),
       ),
     );

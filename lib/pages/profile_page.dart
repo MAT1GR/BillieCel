@@ -4,6 +4,7 @@ import 'package:mi_billetera_digital/pages/change_password_page.dart';
 import 'package:mi_billetera_digital/pages/recurring_transactions_page.dart';
 import 'package:mi_billetera_digital/pages/login_page.dart';
 import 'package:mi_billetera_digital/pages/couple_settings_page.dart';
+import 'package:mi_billetera_digital/pages/export_data_page.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -264,6 +265,22 @@ class _ProfilePageState extends State<ProfilePage> {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => const CoupleSettingsPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: Icon(
+                      Icons.download_outlined,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    title: const Text('Exportar Datos'),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ExportDataPage(),
                         ),
                       );
                     },

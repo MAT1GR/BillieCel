@@ -3,7 +3,9 @@ import 'package:intl/intl.dart';
 import 'package:mi_billetera_digital/main.dart'; // Import supabase instance
 
 class AddRecurringTransactionPage extends StatefulWidget {
-  const AddRecurringTransactionPage({super.key});
+  final Map<String, dynamic>? recurringTransaction;
+
+  const AddRecurringTransactionPage({super.key, this.recurringTransaction});
 
   @override
   State<AddRecurringTransactionPage> createState() => _AddRecurringTransactionPageState();
@@ -28,7 +30,21 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
     super.initState();
     _accountsFuture = _fetchAccounts();
     _categoriesFuture = _fetchCategories();
-    _startDate = DateTime.now(); // Default start date to today
+
+    if (widget.recurringTransaction != null) {
+      _type = widget.recurringTransaction!['type'];
+      _amount = (widget.recurringTransaction!['amount'] as num).toDouble();
+      _description = widget.recurringTransaction!['description'];
+      _selectedCategory = widget.recurringTransaction!['category']['name']; // Assuming category is nested
+      _selectedAccountId = widget.recurringTransaction!['account_id'];
+      _frequency = widget.recurringTransaction!['frequency'];
+      _startDate = DateTime.parse(widget.recurringTransaction!['start_date']);
+      if (widget.recurringTransaction!['end_date'] != null) {
+        _endDate = DateTime.parse(widget.recurringTransaction!['end_date']);
+      }
+    } else {
+      _startDate = DateTime.now(); // Default start date to today for new transactions
+    }
   }
 
   Future<List<Map<String, dynamic>>> _fetchAccounts() async {
@@ -54,7 +70,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
 
       try {
         final userId = supabase.auth.currentUser!.id;
-        await supabase.from('recurring_transactions').insert({
+        final transactionData = {
           'user_id': userId,
           'type': _type,
           'amount': _amount,
@@ -64,19 +80,34 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
           'frequency': _frequency,
           'start_date': _startDate!.toIso8601String(),
           'end_date': _endDate?.toIso8601String(),
-          'next_occurrence_date': _startDate!.toIso8601String(), // Initialize with start date
-        });
+          'next_occurrence_date': _startDate!.toIso8601String(), // Re-initialize next occurrence on save/update
+        };
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Transacción recurrente guardada con éxito!')),
-          );
-          Navigator.of(context).pop();
+        if (widget.recurringTransaction == null) {
+          // Add new recurring transaction
+          await supabase.from('recurring_transactions').insert(transactionData);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Transacción recurrente guardada con éxito!')),
+            );
+            Navigator.of(context).pop();
+          }
+        } else {
+          // Update existing recurring transaction
+          await supabase.from('recurring_transactions').update(transactionData).eq('id', widget.recurringTransaction!['id']);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Transacción recurrente actualizada con éxito!')),
+            );
+            Navigator.of(context).pop();
+          }
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al guardar transacción recurrente: $e')),
+            SnackBar(content: Text('Error al guardar/actualizar transacción recurrente: $e')),
           );
         }
       }
@@ -87,7 +118,9 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Añadir Transacción Recurrente'),
+        title: Text(widget.recurringTransaction == null
+            ? 'Añadir Transacción Recurrente'
+            : 'Editar Transacción Recurrente'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -114,7 +147,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Type selection (Income/Expense)
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Tipo'),
-                    initialValue: _type,
+                    value: _type, // Use value instead of initialValue for dynamic updates
                     items: const [
                       DropdownMenuItem(value: 'income', child: Text('Ingreso')),
                       DropdownMenuItem(value: 'expense', child: Text('Egreso')),
@@ -132,6 +165,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   TextFormField(
                     decoration: const InputDecoration(labelText: 'Cantidad'),
                     keyboardType: TextInputType.number,
+                    initialValue: _amount?.toString(), // Set initial value
                     onSaved: (value) => _amount = double.tryParse(value ?? ''),
                     validator: (value) =>
                         value == null || double.tryParse(value) == null
@@ -143,6 +177,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Description
                   TextFormField(
                     decoration: const InputDecoration(labelText: 'Descripción'),
+                    initialValue: _description, // Set initial value
                     onSaved: (value) => _description = value,
                     validator: (value) =>
                         value == null || value.isEmpty ? 'Introduce una descripción' : null,
@@ -152,7 +187,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Category
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Categoría'),
-                    initialValue: _selectedCategory,
+                    value: _selectedCategory, // Use value instead of initialValue
                     items: categories.map((category) {
                       return DropdownMenuItem<String>(
                         value: category['name'] as String,
@@ -171,7 +206,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Account
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Cuenta'),
-                    initialValue: _selectedAccountId,
+                    value: _selectedAccountId, // Use value instead of initialValue
                     items: accounts.map((account) {
                       return DropdownMenuItem(
                         value: account['id'].toString(),
@@ -190,7 +225,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Frequency
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Frecuencia'),
-                    initialValue: _frequency,
+                    value: _frequency, // Use value instead of initialValue
                     items: const [
                       DropdownMenuItem(value: 'daily', child: Text('Diaria')),
                       DropdownMenuItem(value: 'weekly', child: Text('Semanal')),
@@ -248,7 +283,9 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
 
                   ElevatedButton(
                     onPressed: _saveRecurringTransaction,
-                    child: const Text('Guardar Transacción Recurrente'),
+                    child: Text(widget.recurringTransaction == null
+                        ? 'Guardar Transacción Recurrente'
+                        : 'Guardar Cambios'),
                   ),
                 ],
               );

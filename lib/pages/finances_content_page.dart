@@ -5,8 +5,7 @@ import 'package:mi_billetera_digital/pages/savings_goals_page.dart';
 import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
 
 class FinancesContentPage extends StatefulWidget {
-  final CoupleMode mode;
-  const FinancesContentPage({super.key, required this.mode});
+  const FinancesContentPage({super.key});
 
   @override
   State<FinancesContentPage> createState() => _FinancesContentPageState();
@@ -29,10 +28,9 @@ class _FinancesContentPageState extends State<FinancesContentPage> with TickerPr
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: TabBar(
+    return Column(
+      children: [
+        TabBar(
           controller: _tabController,
           tabs: const [
             Tab(text: 'Cuentas'),
@@ -40,15 +38,17 @@ class _FinancesContentPageState extends State<FinancesContentPage> with TickerPr
             Tab(text: 'Metas'),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          AccountsPage(mode: widget.mode),
-          BudgetsPage(mode: widget.mode),
-          SavingsGoalsPage(mode: widget.mode),
-        ],
-      ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: const [
+              AccountsPage(),
+              BudgetsPage(),
+              SavingsGoalsPage(),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

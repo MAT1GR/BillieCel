@@ -10,7 +10,6 @@ import 'package:mi_billetera_digital/app_theme.dart';
 import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:mi_billetera_digital/widgets/my_app_bar.dart';
 import 'package:mi_billetera_digital/widgets/financial_summary_card.dart';
-import 'package:mi_billetera_digital/pages/analysis_page.dart';
 import 'package:mi_billetera_digital/widgets/transaction_list_item.dart';
 import 'package:mi_billetera_digital/widgets/filter_bottom_sheet.dart';
 import 'package:mi_billetera_digital/models/financial_summary_data.dart'; // Import FinancialSummaryData from its new location

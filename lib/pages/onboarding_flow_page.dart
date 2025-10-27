@@ -13,29 +13,25 @@ class _OnboardingFlowPageState extends State<OnboardingFlowPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  List<Widget> _onboardingPages = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _onboardingPages = [
-      _buildOnboardingPage(
-        title: 'Bienvenido a Mi Billetera Digital',
-        description: 'Tu asistente personal para gestionar tus finanzas.',
-        imagePath: 'assets/images/logo.png', // Replace with actual image path
-      ),
-      _buildOnboardingPage(
-        title: 'Controla tus Gastos',
-        description: 'Registra tus ingresos y egresos fácilmente.',
-        imagePath: 'assets/images/google_logo.png', // Replace with actual image path
-      ),
-      _buildOnboardingPage(
-        title: 'Alcanza tus Metas',
-        description: 'Crea metas de ahorro y sigue tu progreso.',
-        imagePath: 'assets/images/logo.png', // Replace with actual image path
-      ),
-    ];
-  }
+  // Store data, not widgets, for better performance and dynamic theme handling
+  final List<Map<String, String>> _onboardingData = [
+    {
+      'title': 'Bienvenido a Mi Billetera Digital',
+      'description': 'Tu asistente personal para gestionar tus finanzas.',
+      'imagePath': 'logo', // Special key to use the theme-aware app logo
+    },
+    {
+      'title': 'Controla tus Gastos',
+      'description': 'Registra tus ingresos y egresos fácilmente.',
+      'imagePath':
+          'assets/images/google_logo.png', // Specific image for this page
+    },
+    {
+      'title': 'Alcanza tus Metas',
+      'description': 'Crea metas de ahorro y sigue tu progreso.',
+      'imagePath': 'logo', // Special key to use the theme-aware app logo
+    },
+  ];
 
   Widget _buildOnboardingPage({
     required String title,
@@ -82,7 +78,7 @@ class _OnboardingFlowPageState extends State<OnboardingFlowPage> {
   }
 
   void _onNextPressed() {
-    if (_currentPage < _onboardingPages.length - 1) {
+    if (_currentPage < _onboardingData.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeIn,
@@ -104,13 +100,30 @@ class _OnboardingFlowPageState extends State<OnboardingFlowPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final logoAssetPath =
+        isDarkMode ? 'assets/images/oscuro.png' : 'assets/images/logo.png';
+
     return Scaffold(
       body: Stack(
         children: [
-          PageView(
+          PageView.builder(
             controller: _pageController,
             onPageChanged: _onPageChanged,
-            children: _onboardingPages,
+            itemCount: _onboardingData.length,
+            itemBuilder: (context, index) {
+              final pageData = _onboardingData[index];
+              String imagePath = pageData['imagePath']!;
+              // Use the theme-aware logo if the imagePath is our special key
+              if (imagePath == 'logo') {
+                imagePath = logoAssetPath;
+              }
+              return _buildOnboardingPage(
+                title: pageData['title']!,
+                description: pageData['description']!,
+                imagePath: imagePath,
+              );
+            },
           ),
           Align(
             alignment: Alignment.bottomCenter,
@@ -125,7 +138,7 @@ class _OnboardingFlowPageState extends State<OnboardingFlowPage> {
                   ),
                   Row(
                     children: List.generate(
-                      _onboardingPages.length,
+                      _onboardingData.length,
                       (index) => AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         margin: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -142,7 +155,7 @@ class _OnboardingFlowPageState extends State<OnboardingFlowPage> {
                   ),
                   ElevatedButton(
                     onPressed: _onNextPressed,
-                    child: Text(_currentPage == _onboardingPages.length - 1
+                    child: Text(_currentPage == _onboardingData.length - 1
                         ? 'Empezar'
                         : 'Siguiente'),
                   ),

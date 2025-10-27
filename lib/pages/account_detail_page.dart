@@ -5,6 +5,8 @@ import 'package:mi_billetera_digital/widgets/loading_shimmer.dart'; // <-- ESTA 
 import 'package:mi_billetera_digital/widgets/transaction_list_item.dart';
 
 import 'package:mi_billetera_digital/pages/add_transaction_page.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
+import 'package:provider/provider.dart';
 
 class AccountDetailPage extends StatefulWidget {
   final Map<String, dynamic> account;
@@ -16,14 +18,49 @@ class AccountDetailPage extends StatefulWidget {
 }
 
 class _AccountDetailPageState extends State<AccountDetailPage> {
-  late final Stream<List<Map<String, dynamic>>> _transactionsStream;
+  late Stream<List<Map<String, dynamic>>> _transactionsStream;
 
   @override
   void initState() {
     super.initState();
-    dynamic query = supabase.from('transactions').stream(primaryKey: ['id']);
-    query = query.eq('account_id', widget.account['id']);
-    _transactionsStream = query.order('date', ascending: false);
+    // Listen to couple mode changes to refresh the stream
+    context.read<CoupleModeProvider>().addListener(_onCoupleModeChanged);
+    _transactionsStream = _createStream();
+  }
+
+  @override
+  void dispose() {
+    context.read<CoupleModeProvider>().removeListener(_onCoupleModeChanged);
+    super.dispose();
+  }
+
+  void _onCoupleModeChanged() {
+    if (mounted) {
+      setState(() {
+        _transactionsStream = _createStream();
+      });
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> _createStream() {
+    // NOTE: This is now a Future-based stream, not a realtime stream,
+    // to fix a compilation error with the current Supabase library version.
+    final future = () async {
+      final userId = supabase.auth.currentUser!.id;
+      final coupleModeProvider = context.read<CoupleModeProvider>();
+
+      final query = supabase.from('transactions').select();
+
+      final filteredQuery = coupleModeProvider.isJointMode
+          ? query.eq('couple_id', coupleModeProvider.coupleId!)
+          : query.eq('user_id', userId);
+
+      final data = await filteredQuery
+          .eq('account_id', widget.account['id'])
+          .order('date', ascending: false);
+      return data;
+    }();
+    return Stream.fromFuture(future);
   }
 
   @override

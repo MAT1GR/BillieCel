@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/models/debt_model.dart';
 import 'package:mi_billetera_digital/utils/currency_input_formatter.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddDebtPage extends StatefulWidget {
   final DebtType? initialDebtType;
@@ -42,9 +45,11 @@ class _AddDebtPageState extends State<AddDebtPage> {
       final amount = double.parse(_amountController.text.replaceAll('.', ''));
       final finalAmount = _debtType == DebtType.owed ? amount : -amount;
 
+      final userId = supabase.auth.currentUser!.id;
+      final coupleModeProvider = context.read<CoupleModeProvider>();
+
       try {
         final data = {
-          'user_id': supabase.auth.currentUser!.id,
           'person_name': _nameController.text,
           'amount': finalAmount,
           'original_amount': amount,
@@ -53,8 +58,21 @@ class _AddDebtPageState extends State<AddDebtPage> {
           'is_paid': false,
         };
 
+        if (coupleModeProvider.isJointMode) {
+          data['couple_id'] = coupleModeProvider.coupleId!;
+          data['user_id'] = userId; // Still associate with user for RLS/tracking
+        } else {
+          data['user_id'] = userId;
+        }
+
         if (widget.debt != null) {
-          await supabase.from('debts').update(data).match({'id': widget.debt!['id']});
+          PostgrestFilterBuilder updateQuery = supabase.from('debts').update(data).match({'id': widget.debt!['id']});
+          if (coupleModeProvider.isJointMode) {
+            updateQuery = updateQuery.eq('couple_id', coupleModeProvider.coupleId!); // Ensure updating correct couple debt
+          } else {
+            updateQuery = updateQuery.eq('user_id', userId); // Ensure updating correct personal debt
+          }
+          await updateQuery;
         } else {
           await supabase.from('debts').insert(data);
         }

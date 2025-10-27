@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mi_billetera_digital/main.dart'; // Import supabase instance
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddRecurringTransactionPage extends StatefulWidget {
   final Map<String, dynamic>? recurringTransaction;
@@ -22,20 +25,29 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
   DateTime? _startDate;
   DateTime? _endDate;
 
-  late Future<List<Map<String, dynamic>>> _accountsFuture;
-  late Future<List<Map<String, dynamic>>> _categoriesFuture;
+  Future<List<Map<String, dynamic>>>? _accountsFuture;
+  Future<List<Map<String, dynamic>>>? _categoriesFuture;
+  bool _futuresInitialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_futuresInitialized) {
+      _accountsFuture = _fetchAccounts();
+      _categoriesFuture = _fetchCategories();
+      _futuresInitialized = true;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _accountsFuture = _fetchAccounts();
-    _categoriesFuture = _fetchCategories();
 
     if (widget.recurringTransaction != null) {
       _type = widget.recurringTransaction!['type'];
       _amount = (widget.recurringTransaction!['amount'] as num).toDouble();
       _description = widget.recurringTransaction!['description'];
-      _selectedCategory = widget.recurringTransaction!['category']['name']; // Assuming category is nested
+      _selectedCategory = widget.recurringTransaction!['category'];
       _selectedAccountId = widget.recurringTransaction!['account_id'];
       _frequency = widget.recurringTransaction!['frequency'];
       _startDate = DateTime.parse(widget.recurringTransaction!['start_date']);
@@ -49,12 +61,32 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
 
   Future<List<Map<String, dynamic>>> _fetchAccounts() async {
     final userId = supabase.auth.currentUser!.id;
-    return await supabase.from('accounts').select().eq('user_id', userId).order('name');
+    final coupleModeProvider = context.read<CoupleModeProvider>();
+
+    var queryBuilder = supabase.from('accounts').select('id, name');
+
+    if (coupleModeProvider.isJointMode) {
+      final coupleId = coupleModeProvider.coupleId!;
+      queryBuilder = queryBuilder.or('user_id.eq.$userId,couple_id.eq.$coupleId');
+    } else {
+      queryBuilder = queryBuilder.eq('user_id', userId);
+    }
+    return await queryBuilder.order('name');
   }
 
   Future<List<Map<String, dynamic>>> _fetchCategories() async {
     final userId = supabase.auth.currentUser!.id;
-    return await supabase.from('categories').select().eq('user_id', userId).order('name');
+    final coupleModeProvider = context.read<CoupleModeProvider>();
+
+    var queryBuilder = supabase.from('categories').select('name');
+
+    if (coupleModeProvider.isJointMode) {
+      final coupleId = coupleModeProvider.coupleId!;
+      queryBuilder = queryBuilder.or('user_id.eq.$userId,couple_id.eq.$coupleId');
+    } else {
+      queryBuilder = queryBuilder.eq('user_id', userId);
+    }
+    return await queryBuilder.order('name');
   }
 
   Future<void> _saveRecurringTransaction() async {
@@ -70,8 +102,9 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
 
       try {
         final userId = supabase.auth.currentUser!.id;
+        final coupleModeProvider = context.read<CoupleModeProvider>();
+
         final transactionData = {
-          'user_id': userId,
           'type': _type,
           'amount': _amount,
           'description': _description,
@@ -82,6 +115,13 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
           'end_date': _endDate?.toIso8601String(),
           'next_occurrence_date': _startDate!.toIso8601String(), // Re-initialize next occurrence on save/update
         };
+
+        if (coupleModeProvider.isJointMode) {
+          transactionData['couple_id'] = coupleModeProvider.coupleId!;
+          transactionData['user_id'] = userId; // Still associate with user for RLS/tracking
+        } else {
+          transactionData['user_id'] = userId;
+        }
 
         if (widget.recurringTransaction == null) {
           // Add new recurring transaction
@@ -95,7 +135,13 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
           }
         } else {
           // Update existing recurring transaction
-          await supabase.from('recurring_transactions').update(transactionData).eq('id', widget.recurringTransaction!['id']);
+          PostgrestFilterBuilder updateQuery = supabase.from('recurring_transactions').update(transactionData).eq('id', widget.recurringTransaction!['id']);
+          if (coupleModeProvider.isJointMode) {
+            updateQuery = updateQuery.eq('couple_id', coupleModeProvider.coupleId!); // Ensure updating correct couple recurring transaction
+          } else {
+            updateQuery = updateQuery.eq('user_id', userId); // Ensure updating correct personal recurring transaction
+          }
+          await updateQuery;
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -127,7 +173,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
         child: Form(
           key: _formKey,
           child: FutureBuilder<List<List<Map<String, dynamic>>>>(
-            future: Future.wait([_accountsFuture, _categoriesFuture]),
+            future: Future.wait([_accountsFuture!, _categoriesFuture!]),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -147,7 +193,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Type selection (Income/Expense)
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Tipo'),
-                    initialValue: _type, // Use value instead of initialValue for dynamic updates
+                    value: _type,
                     items: const [
                       DropdownMenuItem(value: 'income', child: Text('Ingreso')),
                       DropdownMenuItem(value: 'expense', child: Text('Egreso')),
@@ -187,7 +233,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Category
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Categoría'),
-                    initialValue: _selectedCategory, // Use value instead of initialValue
+                    value: _selectedCategory,
                     items: categories.map((category) {
                       return DropdownMenuItem<String>(
                         value: category['name'] as String,
@@ -206,7 +252,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Account
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Cuenta'),
-                    initialValue: _selectedAccountId, // Use value instead of initialValue
+                    value: _selectedAccountId,
                     items: accounts.map((account) {
                       return DropdownMenuItem(
                         value: account['id'].toString(),
@@ -225,7 +271,7 @@ class _AddRecurringTransactionPageState extends State<AddRecurringTransactionPag
                   // Frequency
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Frecuencia'),
-                    initialValue: _frequency, // Use value instead of initialValue
+                    value: _frequency,
                     items: const [
                       DropdownMenuItem(value: 'daily', child: Text('Diaria')),
                       DropdownMenuItem(value: 'weekly', child: Text('Semanal')),

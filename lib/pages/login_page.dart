@@ -75,6 +75,10 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final logoAssetPath =
+        isDarkMode ? 'assets/images/oscuro.png' : 'assets/images/logo.png';
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -90,22 +94,22 @@ class _LoginPageState extends State<LoginPage> {
                   // Reemplazamos el Icon por tu logo
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16.0),
-                    child: Image.asset('assets/images/logo.png', height: 80),
+                    child: Image.asset(logoAssetPath, height: 80),
                   ),
                   const SizedBox(height: 24),
                   Text(
                     'Bienvenido',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   Text(
                     'Inicia sesión para continuar',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppTheme.subtextColor,
-                    ),
+                          color: AppTheme.subtextColor,
+                        ),
                   ),
                   const SizedBox(height: 48),
                   TextFormField(
@@ -128,7 +132,9 @@ class _LoginPageState extends State<LoginPage> {
                       labelText: 'Contraseña',
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                          _isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                         ),
                         onPressed: () {
                           setState(() {
@@ -168,7 +174,6 @@ class _LoginPageState extends State<LoginPage> {
                                 '¿No tienes cuenta? Regístrate',
                               ),
                             ),
-
                           ],
                         ),
                 ],

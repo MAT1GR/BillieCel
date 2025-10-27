@@ -10,8 +10,8 @@ import 'package:mi_billetera_digital/widgets/loading_shimmer.dart';
 import 'package:provider/provider.dart';
 
 class AccountsPage extends StatefulWidget {
-  final CoupleMode mode;
-  const AccountsPage({super.key, this.mode = CoupleMode.personal});
+  // Remove the mode parameter, as the provider will handle it globally
+  const AccountsPage({super.key});
 
   @override
   State<AccountsPage> createState() => _AccountsPageState();
@@ -26,35 +26,61 @@ class _AccountsPageState extends State<AccountsPage> {
   @override
   void initState() {
     super.initState();
-    _setupStream();
-    if (widget.mode == CoupleMode.personal) {
-      _ensureDefaultAccounts();
-    }
+    // Listen to couple mode changes to refresh the stream
+    context.read<CoupleModeProvider>().addListener(_onCoupleModeChanged);
+    _accountsStream = _createStream();
+    _ensureDefaultAccounts(); // Always ensure default accounts
   }
 
-  void _setupStream() {
-    final userId = supabase.auth.currentUser!.id;
-    final coupleModeProvider = context.read<CoupleModeProvider>();
+  @override
+  void dispose() {
+    context.read<CoupleModeProvider>().removeListener(_onCoupleModeChanged);
+    super.dispose();
+  }
 
-    List<String> userIds = [userId];
-    if (widget.mode == CoupleMode.joint && coupleModeProvider.isCoupleActive) {
-      userIds.add(coupleModeProvider.partnerId!);
-    }
+  void _onCoupleModeChanged() {
+    setState(() {
+      _accountsStream = _createStream(); // Refresh stream when couple mode changes
+    });
+    _ensureDefaultAccounts(); // Re-check default accounts for the new mode
+  }
 
-    _accountsStream = supabase
-        .from('accounts')
-        .stream(primaryKey: ['id'])
-        .inFilter('user_id', userIds)
-        .order('name');
+  Stream<List<Map<String, dynamic>>> _createStream() {
+    // NOTE: This is now a Future-based stream, not a realtime stream,
+    // to fix a compilation error with the current Supabase library version.
+    final future = () async {
+      final userId = supabase.auth.currentUser!.id;
+      final coupleModeProvider = context.read<CoupleModeProvider>();
+
+      final query = supabase.from('accounts').select();
+
+      final filteredQuery = coupleModeProvider.isJointMode
+          ? query.eq(
+              'couple_id',
+              coupleModeProvider.coupleId!,
+            )
+          : query.eq('user_id', userId);
+
+      final data = await filteredQuery.order('name');
+      return data;
+    }();
+    return Stream.fromFuture(future);
   }
 
   Future<void> _ensureDefaultAccounts() async {
     final userId = supabase.auth.currentUser!.id;
+    final coupleModeProvider = context.read<CoupleModeProvider>();
 
-    final rows = await supabase
-        .from('accounts')
-        .select('id,name')
-        .eq('user_id', userId);
+    final selectQuery = supabase.from('accounts').select('id,name');
+
+    final filteredQuery = coupleModeProvider.isJointMode
+        ? selectQuery.eq(
+            'couple_id',
+            coupleModeProvider.coupleId!,
+          )
+        : selectQuery.eq('user_id', userId);
+
+    final rows = await filteredQuery;
 
     final existing = (rows as List)
         .map((e) => (e['name'] as String).toLowerCase())
@@ -63,14 +89,23 @@ class _AccountsPageState extends State<AccountsPage> {
     final toInsert = <Map<String, dynamic>>[];
     for (final name in _defaultAccounts) {
       if (!existing.contains(name.toLowerCase())) {
-        toInsert.add({'name': name, 'balance': 0.0, 'user_id': userId});
+        Map<String, dynamic> accountData = {'name': name, 'balance': 0.0};
+        if (coupleModeProvider.isJointMode) {
+          accountData['couple_id'] = coupleModeProvider.coupleId!;
+        } else {
+          accountData['user_id'] = userId;
+        }
+        toInsert.add(accountData);
       }
     }
 
     if (toInsert.isNotEmpty) {
+      String onConflictColumns = coupleModeProvider.isJointMode
+          ? 'couple_id,name'
+          : 'user_id,name';
       await supabase
           .from('accounts')
-          .upsert(toInsert, onConflict: 'user_id,name');
+          .upsert(toInsert, onConflict: onConflictColumns);
     }
   }
 
@@ -124,13 +159,11 @@ class _AccountsPageState extends State<AccountsPage> {
           );
         },
       ),
-      floatingActionButton: widget.mode == CoupleMode.personal
-          ? FloatingActionButton(
-              onPressed: () => _navigateToAddAccount(),
-              backgroundColor: Theme.of(context).primaryColor,
-              child: const Icon(Icons.add, color: Colors.white),
-            )
-          : null,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _navigateToAddAccount(),
+        backgroundColor: Theme.of(context).primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     );
   }
 
@@ -141,7 +174,21 @@ class _AccountsPageState extends State<AccountsPage> {
     final nameLower = (account['name'] as String).toLowerCase();
     final isDefault = nameLower == 'efectivo' || nameLower == 'transferencia';
     final holder = (account['holder_full_name'] as String?);
-    final isOwnAccount = account['user_id'] == supabase.auth.currentUser!.id;
+
+    final coupleModeProvider = context.read<CoupleModeProvider>();
+    bool canModifyAccount = false;
+    if (coupleModeProvider.isJointMode) {
+      canModifyAccount =
+          account['couple_id'] ==
+          coupleModeProvider.coupleId; // Check if it's a joint account
+    } else {
+      canModifyAccount =
+          account['user_id'] ==
+          supabase
+              .auth
+              .currentUser!
+              .id; // Check if it's the user's personal account
+    }
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -155,7 +202,7 @@ class _AccountsPageState extends State<AccountsPage> {
             ),
           );
         },
-        onLongPress: isOwnAccount && widget.mode == CoupleMode.personal
+        onLongPress: canModifyAccount
             ? () {
                 _showAccountOptions(context, account);
               }
@@ -307,6 +354,8 @@ class _AccountsPageState extends State<AccountsPage> {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => AddAccountPage(account: account)),
     );
-    _setupStream(); // Refresh stream after adding/editing account
+    setState(() {
+      _accountsStream = _createStream(); // Refresh stream after adding/editing account
+    });
   }
 }

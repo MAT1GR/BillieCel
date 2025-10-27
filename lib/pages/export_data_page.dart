@@ -21,12 +21,16 @@ class _ExportDataPageState extends State<ExportDataPage> {
     });
 
     try {
-      final response = await supabase.from('transactions').select().order('date', ascending: false);
+      final response = await supabase
+          .from('transactions')
+          .select()
+          .order('date', ascending: false);
 
       if (response.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No transactions to export.')),
+            const SnackBar(
+                content: Text('No hay transacciones para exportar.')),
           );
         }
         return;
@@ -37,19 +41,31 @@ class _ExportDataPageState extends State<ExportDataPage> {
       final accountsResponse = await supabase.from('accounts').select();
 
       final Map<String, String> categoryNames = {
-        for (var category in categoriesResponse) category['id'].toString(): category['name'] as String
+        for (var category in categoriesResponse)
+          category['id'].toString(): category['name'] as String
       };
       final Map<String, String> accountNames = {
-        for (var account in accountsResponse) account['id'].toString(): account['name'] as String
+        for (var account in accountsResponse)
+          account['id'].toString(): account['name'] as String
       };
 
       List<List<dynamic>> rows = [];
       // Add header row
-      rows.add(['ID', 'Amount', 'Description', 'Date', 'Category', 'Account', 'Type']);
+      rows.add([
+        'ID',
+        'Monto',
+        'Descripción',
+        'Fecha',
+        'Categoría',
+        'Cuenta',
+        'Tipo'
+      ]);
 
       for (var transaction in response) {
-        final categoryName = categoryNames[transaction['category_id'].toString()] ?? 'Unknown';
-        final accountName = accountNames[transaction['account_id'].toString()] ?? 'Unknown';
+        final categoryName =
+            categoryNames[transaction['category_id'].toString()] ?? 'Desconocida';
+        final accountName =
+            accountNames[transaction['account_id'].toString()] ?? 'Desconocida';
 
         rows.add([
           transaction['id'],
@@ -70,21 +86,25 @@ class _ExportDataPageState extends State<ExportDataPage> {
       await file.writeAsString(csv);
 
       if (mounted) {
-        await Share.shareXFiles([XFile(path)], text: 'Here are your transactions.');
+        await Share.shareXFiles([XFile(path)],
+            text: 'Aquí están tus transacciones.');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Transactions exported and shared.')),
+          const SnackBar(
+              content: Text('Transacciones exportadas y compartidas.')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error exporting transactions: $e')),
+          SnackBar(content: Text('Error al exportar transacciones: $e')),
         );
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -92,23 +112,90 @@ class _ExportDataPageState extends State<ExportDataPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Export Data'),
+        title: const Text('Exportar Datos'),
       ),
-      body: Center(
-        child: ElevatedButton.icon(
-          onPressed: _isLoading ? null : _exportTransactions,
-          icon: _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Opciones de Exportación',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                )
-              : const Icon(Icons.download),
-          label: Text(_isLoading ? 'Exporting...' : 'Export Transactions to CSV'),
-        ),
+                  child: InkWell(
+                    onTap: _isLoading ? null : _exportTransactions,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.description_outlined,
+                              size: 40, color: Colors.blueAccent),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Exportar Transacciones',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Exporta todo tu historial de transacciones a un archivo CSV.',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          const Icon(Icons.download_for_offline_outlined,
+                              color: Colors.grey),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                    SizedBox(height: 20),
+                    Text(
+                      'Exportando datos...',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

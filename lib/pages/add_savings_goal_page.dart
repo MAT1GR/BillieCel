@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/utils/currency_input_formatter.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddSavingsGoalPage extends StatefulWidget {
   const AddSavingsGoalPage({super.key, required Map<String, dynamic> goal});
@@ -28,10 +31,23 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
         _isLoading = true;
       });
       try {
-        await supabase.from('savings_goals').insert({
+        final userId = supabase.auth.currentUser!.id;
+        final coupleModeProvider = context.read<CoupleModeProvider>();
+
+        final data = {
           'name': _nameController.text.trim(),
           'target_amount': double.parse(_amountController.text.replaceAll('.', '')),
-        });
+          'current_amount': 0.0, // New goals start with 0 current amount
+        };
+
+        if (coupleModeProvider.isJointMode) {
+          data['couple_id'] = coupleModeProvider.coupleId!;
+          data['user_id'] = userId; // Still associate with user for RLS/tracking
+        } else {
+          data['user_id'] = userId;
+        }
+
+        await supabase.from('savings_goals').insert(data);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -111,3 +127,4 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
     );
   }
 }
+

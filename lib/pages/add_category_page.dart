@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddCategoryPage extends StatefulWidget {
   final Map<String, dynamic>? category;
@@ -64,6 +67,12 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
     '0xFFE64A19', // deepOrange
     '0xFF5D4037', // brown
   ];
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,15 +157,32 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
               ElevatedButton(
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
+                    final userId = supabase.auth.currentUser!.id;
+                    final coupleModeProvider = context.read<CoupleModeProvider>();
+
                     final data = {
-                      'user_id': supabase.auth.currentUser!.id,
                       'name': _nameController.text,
                       'icon': _selectedIcon,
                       'color': _selectedColor,
+                      'type': 'expense', // Assuming categories added here are always expense
                     };
+
+                    if (coupleModeProvider.isJointMode) {
+                      data['couple_id'] = coupleModeProvider.coupleId!;
+                      data['user_id'] = userId; // Still associate with user for RLS/tracking
+                    } else {
+                      data['user_id'] = userId;
+                    }
+
                     try {
                       if (_isEditing) {
-                        await supabase.from('categories').update(data).match({'id': widget.category!['id']});
+                        PostgrestFilterBuilder updateQuery = supabase.from('categories').update(data).match({'id': widget.category!['id']});
+                        if (coupleModeProvider.isJointMode) {
+                          updateQuery = updateQuery.eq('couple_id', coupleModeProvider.coupleId!); // Ensure updating correct couple category
+                        } else {
+                          updateQuery = updateQuery.eq('user_id', userId); // Ensure updating correct personal category
+                        }
+                        await updateQuery;
                       } else {
                         await supabase.from('categories').insert(data);
                       }

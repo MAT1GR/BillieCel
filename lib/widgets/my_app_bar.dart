@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
+import 'package:provider/provider.dart';
 
-class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
+class MyAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
 
@@ -11,14 +13,53 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
+  State<MyAppBar> createState() => _MyAppBarState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class _MyAppBarState extends State<MyAppBar> {
+  @override
   Widget build(BuildContext context) {
     final canPop = Navigator.canPop(context);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final logoAssetPath =
+        isDarkMode ? 'assets/images/oscuro.png' : 'assets/images/logo.png';
+
+    final coupleModeProvider = context.watch<CoupleModeProvider>();
+
+    List<Widget> appBarActions = [...(widget.actions ?? [])];
+
+    if (coupleModeProvider.isCoupleActive) {
+      appBarActions.add(
+        Row(
+          children: [
+            Text(
+              coupleModeProvider.isJointMode ? 'Conjunto' : 'Personal',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+            ),
+            Switch(
+              value: coupleModeProvider.isJointMode,
+              onChanged: (value) {
+                coupleModeProvider.setMode(
+                  value ? CoupleMode.joint : CoupleMode.personal,
+                );
+              },
+              activeColor: Theme.of(context).colorScheme.secondary,
+            ),
+          ],
+        ),
+      );
+    }
 
     return AppBar(
       leading: !canPop
           ? FutureBuilder(
               future: precacheImage(
-                const AssetImage('assets/images/logo.png'),
+                AssetImage(logoAssetPath),
                 context,
               ),
               builder: (context, snapshot) {
@@ -27,7 +68,7 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
                     padding: const EdgeInsets.all(8.0),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(4.0),
-                      child: Image.asset('assets/images/logo.png'),
+                      child: Image.asset(logoAssetPath),
                     ),
                   );
                 } else {
@@ -36,12 +77,9 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
               },
             )
           : null,
-      title: Text(title),
-      actions: actions,
+      title: Text(widget.title),
+      actions: appBarActions,
       centerTitle: false,
     );
   }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

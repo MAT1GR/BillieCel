@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/utils/currency_input_formatter.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddBudgetPage extends StatefulWidget {
   const AddBudgetPage({super.key, required Map<String, dynamic> budget});
@@ -24,10 +27,22 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
   }
 
   Future<void> _loadCategories() async {
-    final categoriesData = await supabase
+    final userId = supabase.auth.currentUser!.id;
+    final coupleModeProvider = context.read<CoupleModeProvider>();
+
+    PostgrestFilterBuilder queryBuilder = supabase
         .from('categories')
         .select('name, icon, color')
         .eq('type', 'expense'); // Only expense categories for budgets
+
+    if (coupleModeProvider.isJointMode) {
+      queryBuilder = queryBuilder.eq('couple_id', coupleModeProvider.coupleId!); // Filter by couple_id
+    } else {
+      queryBuilder = queryBuilder.eq('user_id', userId); // Filter by user_id
+    }
+
+    final categoriesData = await queryBuilder;
+
     if (mounted) {
       setState(() {
         _userCategories = (categoriesData as List).cast<Map<String, dynamic>>();
@@ -48,13 +63,24 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
       });
       try {
         final now = DateTime.now();
-        await supabase.from('budgets').insert({
+        final userId = supabase.auth.currentUser!.id;
+        final coupleModeProvider = context.read<CoupleModeProvider>();
+
+        final data = {
           'category': _selectedCategory,
           'amount': double.parse(_amountController.text.replaceAll('.', '')),
           'month': now.month,
           'year': now.year,
-          'user_id': supabase.auth.currentUser!.id,
-        });
+        };
+
+        if (coupleModeProvider.isJointMode) {
+          data['couple_id'] = coupleModeProvider.coupleId!;
+          data['user_id'] = userId; // Still associate with user for RLS/tracking
+        } else {
+          data['user_id'] = userId;
+        }
+
+        await supabase.from('budgets').insert(data);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

@@ -26,12 +26,14 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
     final currentUser = supabase.auth.currentUser;
     if (currentUser != null) {
       final userId = currentUser.id;
-      _recurringTransactionsStream = supabase
+      final future = supabase
           .from('recurring_transactions')
-          .select('*, accounts(name, icon), categories(name, icon)')
-          .stream(primaryKey: ['id'])
+          .select('id, description, amount, next_occurrence_date, is_active, accounts(name), categories(name)')
           .eq('user_id', userId)
           .order('next_occurrence_date', ascending: true);
+      _recurringTransactionsStream = Stream.fromFuture(future);
+    } else {
+      _recurringTransactionsStream = Stream.value([]);
     }
   }
 
@@ -65,6 +67,9 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Transacción recurrente eliminada.')),
           );
+          setState(() {
+            _setupRecurringTransactionsStream();
+          });
         }
       } catch (e) {
         if (mounted) {
@@ -76,13 +81,21 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
     }
   }
 
+  void _refreshTransactions() {
+    if (mounted) {
+      setState(() {
+        _setupRecurringTransactionsStream();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Transacciones Automáticas'),
         actions: [
-          IconButton(
+          IconButton( 
             icon: const Icon(Icons.add),
             onPressed: () async {
               await Navigator.of(context).push(
@@ -90,139 +103,147 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
                   builder: (context) => const AddRecurringTransactionPage(),
                 ),
               );
-              _setupRecurringTransactionsStream(); // Refresh stream
+              _refreshTransactions();
             },
           ),
         ],
       ),
-      body: _recurringTransactionsStream == null
-          ? const Center(
-              child: Text(
-                'Inicia sesión para ver tus transacciones recurrentes.',
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _recurringTransactionsStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'No hay transacciones automáticas.',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text('Crear Transacción Automática'),
+                    onPressed: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const AddRecurringTransactionPage(),
+                        ),
+                      );
+                      _refreshTransactions();
+                    },
+                  ),
+                ],
               ),
-            )
-          : StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _recurringTransactionsStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'No hay transacciones automáticas.',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        const SizedBox(height: 16),
-                        FloatingActionButton.extended(
-                          onPressed: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const AddRecurringTransactionPage(),
-                              ),
-                            );
-                            _setupRecurringTransactionsStream(); // Refresh stream
-                          },
-                          label: const Text('Crear Transacción Automática'),
-                          icon: const Icon(Icons.add),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+            );
+          }
 
-                final transactions = snapshot.data!;
+          final transactions = snapshot.data!;
 
-                return ListView.builder(
-                  itemCount: transactions.length,
-                  itemBuilder: (context, index) {
-                    final transaction = transactions[index];
-                    final nextOccurrence = DateTime.parse(
-                      transaction['next_occurrence_date'],
-                    );
-                    final formattedAmount = NumberFormat.currency(
-                      symbol: '\$',
-                    ).format(transaction['amount']);
+          return ListView.builder(
+            itemCount: transactions.length,
+            itemBuilder: (context, index) {
+              final transaction = transactions[index];
+              final nextOccurrence = DateTime.parse(
+                transaction['next_occurrence_date'],
+              );
+              final formattedAmount = NumberFormat.currency(
+                symbol: '\$',
+              ).format(transaction['amount']);
 
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: ListTile(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => AddRecurringTransactionPage(
-                                recurringTransaction: transaction,
-                              ),
-                            ),
-                          );
-                        },
-                        leading: AccountLogoWidget(
-                          accountName: transaction['accounts']['name'],
-                          iconPath: transaction['accounts']['icon'] ?? '',
-                          size: 40,
-                        ),
-                        title: Text(transaction['description']),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Monto: $formattedAmount'),
-                            Text('Próxima ocurrencia: ${DateFormat.yMd().format(nextOccurrence)}'),
-                            Row(
-                              children: [
-                                const Icon(Icons.category, size: 16),
-                                const SizedBox(width: 4),
-                                Text(transaction['categories']['name']),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                const Text('Activa:'),
-                                Switch(
-                                  value: transaction['is_active'] ?? true, // Assuming 'is_active' column exists, default to true
-                                  onChanged: (bool value) async {
-                                    try {
-                                      await supabase.from('recurring_transactions').update({'is_active': value}).eq('id', transaction['id']);
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Transacción ${value ? 'activada' : 'pausada'}.')),
-                                        );
-                                      }
-                                    } catch (e) {
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Error al cambiar estado: $e')),
-                                        );
-                                      }
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () =>
-                              _deleteRecurringTransaction(transaction['id']),
+              final accountName = transaction['accounts']?['name'] ?? 'N/A';
+              final accountIcon = transaction['accounts']?['icon'] ?? '';
+              final categoryName = transaction['categories']?['name'] ?? 'N/A';
+
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => AddRecurringTransactionPage(
+                          recurringTransaction: transaction,
                         ),
                       ),
                     );
+                    _refreshTransactions();
                   },
-                );
-              },
-            ),
+                  leading: AccountLogoWidget(
+                    accountName: accountName,
+                    iconPath: accountIcon,
+                    size: 40,
+                  ),
+                  title: Text(transaction['description'] ?? 'Sin descripción'),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Monto: $formattedAmount'),
+                      Text(
+                        'Próxima ocurrencia: ${DateFormat.yMd().format(nextOccurrence)}',
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.category, size: 16),
+                          const SizedBox(width: 4),
+                          Text(categoryName),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          const Text('Activa:'),
+                          Switch(
+                            value: transaction['is_active'] ?? true,
+                            onChanged: (bool value) async {
+                              try {
+                                await supabase
+                                    .from('recurring_transactions')
+                                    .update({'is_active': value}).eq(
+                                        'id', transaction['id']);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Transacción ${value ? 'activada' : 'pausada'}.',
+                                      ),
+                                    ),
+                                  );
+                                  _refreshTransactions();
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Error al cambiar estado: $e',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _deleteRecurringTransaction(
+                        transaction['id'].toString()),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
-
-

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
 
 class FinancialSummaryCard extends StatelessWidget {

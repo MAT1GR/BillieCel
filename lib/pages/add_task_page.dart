@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/app_theme.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddTaskPage extends StatefulWidget {
   final Map<String, dynamic>? task; // Acepta una tarea para editar
@@ -60,18 +63,35 @@ class _AddTaskPageState extends State<AddTaskPage> {
         _isLoading = true;
       });
       try {
+        final userId = supabase.auth.currentUser!.id;
+        final coupleModeProvider = context.read<CoupleModeProvider>();
+
         final data = {
           'title': _titleController.text.trim(),
           'description': _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
           'due_date': _selectedDate?.toIso8601String(),
+          'completed': false, // New tasks are not completed
         };
 
+        if (coupleModeProvider.isJointMode) {
+          data['couple_id'] = coupleModeProvider.coupleId!;
+          data['user_id'] = userId; // Still associate with user for RLS/tracking
+        } else {
+          data['user_id'] = userId;
+        }
+
         if (_isEditing) {
-          await supabase.from('tasks').update(data).match({
+          PostgrestFilterBuilder updateQuery = supabase.from('tasks').update(data).match({
             'id': widget.task!['id'],
           });
+          if (coupleModeProvider.isJointMode) {
+            updateQuery = updateQuery.eq('couple_id', coupleModeProvider.coupleId!); // Ensure updating correct couple task
+          } else {
+            updateQuery = updateQuery.eq('user_id', userId); // Ensure updating correct personal task
+          }
+          await updateQuery;
         } else {
           await supabase.from('tasks').insert(data);
         }

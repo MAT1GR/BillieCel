@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mi_billetera_digital/main.dart';
 import 'package:mi_billetera_digital/widgets/account_logo_widget.dart';
+import 'package:mi_billetera_digital/utils/couple_mode_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddAccountPage extends StatefulWidget {
   final Map<String, dynamic>? account;
@@ -57,19 +60,35 @@ class _AddAccountPageState extends State<AddAccountPage> {
 
   Future<void> _saveAccount() async {
     if (formKey.currentState!.validate()) {
+      final userId = supabase.auth.currentUser!.id;
+      final coupleModeProvider = context.read<CoupleModeProvider>();
+
       final data = <String, dynamic>{
         'name': nameController.text.trim(),
         'balance': double.parse(balanceController.text),
-        'user_id': supabase.auth.currentUser!.id,
         'holder_full_name': holderController.text.trim().isEmpty
             ? null
             : holderController.text.trim(),
       };
+
+      if (coupleModeProvider.isJointMode) {
+        data['couple_id'] = coupleModeProvider.coupleId!;
+        data['user_id'] = userId; // Still associate with user for RLS/tracking
+      } else {
+        data['user_id'] = userId;
+      }
+
       try {
         if (isEditing) {
-          await supabase.from('accounts').update(data).match({
+          PostgrestFilterBuilder updateQuery = supabase.from('accounts').update(data).match({
             'id': widget.account!['id'],
           });
+          if (coupleModeProvider.isJointMode) {
+            updateQuery = updateQuery.eq('couple_id', coupleModeProvider.coupleId!); // Ensure updating correct couple account
+          } else {
+            updateQuery = updateQuery.eq('user_id', userId); // Ensure updating correct personal account
+          }
+          await updateQuery;
         } else {
           await supabase.from('accounts').insert(data);
         }
